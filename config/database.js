@@ -21,4 +21,8 @@ module.exports = {
 	//after formating the date to custom format yyyy-mm-dd, converted to excel to csv and run below command
 	//mongoimport -h ds243805.mlab.com:43805 -d ptsdev -c Won2 -u ptsuser -p Password123 --file WON_MASTER_DateCorrection.csv --type csv --headerline
 
+	//mongoimport -h ds243805.mlab.com:43805 -d ptsdev -c businessareas -u ptsuser -p Password123 --file BUSINESS_AREA_MASTER.txt --type csv --headerline
+	//mongoimport -h ds243805.mlab.com:43805 -d ptsdev -c projecttypes -u ptsuser -p Password123 --file PROJECT_TYPE_MASTER.txt --type csv --headerline
+	//mongoimport -h ds243805.mlab.com:43805 -d ptsdev -c projectdetails -u ptsuser -p Password123 --file PROJECT_DETAILS.csv --type csv --headerline
+
 }

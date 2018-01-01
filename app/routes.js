@@ -8,8 +8,10 @@ var Company = require('./models/company');
 var Loc = require('./models/loc');
 var Geo = require('./models/geo');
 var User = require('./models/user');
-
 var Won = require('./models/won');
+var Projectdetail = require('./models/projectdetail');
+var Businessarea = require('./models/businessarea');
+var Projecttype = require('./models/projecttype');
 
 var encrdecr=require('../security/encrdecr.js');
  
@@ -42,7 +44,7 @@ function getUsers(res){
 				res.send(err)
 			res.json(users); // return all todos in JSON format
 			//res.json(encrdecr.decrypt(todos));
-		});
+		}).sort( { firstname: 1 } );
 };
 function getUserByID(req,res){
 	console.log(req.params.user_id);
@@ -143,7 +145,7 @@ function getGeos(res){
 //*********************************SECTION WON************************************************
 function getWons(res){
 	Won.find(function(err, won) {
-		console.log('called getWonMasters')
+		console.log('called getWonMasters');
 			res.header("Access-Control-Allow-Origin", "*");
       		res.header("Access-Control-Allow-Headers", "X-Requested-With");
 
@@ -175,6 +177,58 @@ function getUserByInternalID(req,res){
 				res.send(err)
 			res.json(won); 
 		});
+};
+//*********************************SECTION PROJECTDETAILS************************************************
+function getProjectdetails(res){
+	Projectdetail.find(function(err, projectdetail) {
+		
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				res.send(err)
+			res.json(projectdetail); 
+		});
+};
+function getProjectdetailByuniqueID(req,res){
+	console.log(req.params.uniqueid);
+	Projectdetail.find({PROJECT_CODE : req.params.uniqueid},function(err, projectdetail) {
+		res.header("Access-Control-Allow-Origin", "*");
+      	res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			if (err)
+				res.send(err)
+			res.json(projectdetail); 
+		});
+};
+function getProjectdetailByInternalID(req,res){
+	console.log(req.params.internalid);
+	Projectdetail.find({_id : req.params.internalid},function(err, projectdetail) {
+		res.header("Access-Control-Allow-Origin", "*");
+      	res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			if (err)
+				res.send(err)
+			res.json(projectdetail); 
+		});
+};
+
+function getBusinessareas(res){
+	Businessarea.find(function(err, businessarea) {
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			if (err)
+				res.send(err)
+			res.json(businessarea);
+		}).sort( { BUSINESS_AREA_ID : 1 } );
+};
+
+function getProjecttypes(res){
+	Projecttype.find(function(err, projecttype) {
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			if (err)
+				res.send(err)
+			res.json(projecttype);
+		}).sort( { PROJECT_TYPE_ID: 1 } );
 };
 
 //*********************************END OF ALL SECTIONS************************************************
@@ -262,9 +316,7 @@ module.exports = function(app) {
 	});
 	app.post('/api/users/:user_id', function(req, res) {		
 		console.log(req.params.user_id);
-		//console.log(req.body.selectedRole);
-		//if(req.body.selectedRole==='')
-			//console.log('Value Blank');
+
 		var conditions = { _id : req.params.user_id }
 		  , update = { 
 		  	userid : req.body.userid,
@@ -397,9 +449,7 @@ module.exports = function(app) {
 
 	app.post('/api/wons/:internalid', function(req, res) {		
 		console.log(req.params.internalid);
-		//console.log(req.body.selectedRole);
-		//if(req.body.selectedRole==='')
-			//console.log('Value Blank');
+		
 		var conditions = { _id : req.params.internalid }
 		  , update = { 
 		  	WON : req.body.WON,
@@ -429,6 +479,91 @@ module.exports = function(app) {
 	});
 
 //***************************************END OF WON************************************************
+
+//***************************************START OF PROJECTDETAIL************************************************
+	app.get('/api/projectdetails', function(req, res) {
+		getProjectdetails(res);
+	});	
+	app.get('/api/projectdetails/:uniqueid', function(req, res) {
+		getProjectdetailByuniqueID(req,res);
+	});
+	app.get('/api/projectdetails/:internalid/:rnd', function(req, res) {		
+		getProjectdetailByInternalID(req,res);
+	});
+	app.get('/api/businessareas', function(req, res) {
+		getBusinessareas(res);
+	});	
+	app.get('/api/projecttypes', function(req, res) {
+		getProjecttypes(res);
+	});
+	app.delete('/api/projectdetails/:project_id', function(req, res) {
+		console.log(req.params.project_id);
+		Projectdetail.remove({
+			_id : req.params.project_id
+		}, function(err, todo) {
+			if (err)
+				res.send(err);
+			getProjectdetails(res);
+		});
+	});
+
+	app.post('/api/projectdetails', function(req, res) {
+		console.log(req.body);
+		Projectdetail.create({
+			PROJECT_CODE : req.body.PROJECT_CODE,
+			PROJECT_NAME : req.body.PROJECT_NAME,
+			BUSINESS_AREA_ID : req.body.BUSINESS_AREA_ID,
+			PROJECT_TYPE_ID : req.body.PROJECT_TYPE_ID,
+			BUDGET_CATEGORY_ID : req.body.BUDGET_CATEGORY_ID,
+			PROJECT_CATEGORY_ID : req.body.PROJECT_CATEGORY_ID,
+			ACTIVE : req.body.ACTIVE,
+			BS_NON_BS : req.body.BS_NON_BS,
+			BUDGET_TYPE : req.body.BUDGET_TYPE,
+			USER_ID : req.body.USER_ID,
+			STMP : req.body.STMP,
+			UPDATED_BY : req.body.UPDATED_BY,
+			UPDATED_ON : req.body.UPDATED_ON,
+			done : false
+		}, function(err, todo) {
+			if (err)
+				res.send(err);
+			res.json(true);
+		});
+	});
+
+	app.post('/api/projectdetails/:internalid', function(req, res) {		
+		console.log(req.body);
+		console.log(req.params.internalid);
+		
+		var conditions = { _id : req.params.internalid }
+		  , update = { 
+		  	PROJECT_CODE : req.body.PROJECT_CODE,
+			PROJECT_NAME : req.body.PROJECT_NAME,
+			BUSINESS_AREA_ID : req.body.BUSINESS_AREA_ID,
+			PROJECT_TYPE_ID : req.body.PROJECT_TYPE_ID,
+			BUDGET_CATEGORY_ID : req.body.BUDGET_CATEGORY_ID,
+			PROJECT_CATEGORY_ID : req.body.PROJECT_CATEGORY_ID,
+			ACTIVE : req.body.ACTIVE,
+			BS_NON_BS : req.body.BS_NON_BS,
+			BUDGET_TYPE : req.body.BUDGET_TYPE,
+			USER_ID : req.body.USER_ID,
+			STMP : req.body.STMP,
+			UPDATED_BY : req.body.UPDATED_BY,
+			UPDATED_ON : req.body.UPDATED_ON,
+		  }
+		  , options = { multi: true };
+
+		Projectdetail.update(conditions, update, options, callback);
+
+		function callback (err, numAffected) {
+		  if (err)
+				res.send(err);
+			getProjectdetails(res);
+		};																
+		
+	});
+
+//***************************************END OF PROJECT DETAIL************************************************
     
 
 
