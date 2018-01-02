@@ -12,6 +12,7 @@ var Won = require('./models/won');
 var Projectdetail = require('./models/projectdetail');
 var Businessarea = require('./models/businessarea');
 var Projecttype = require('./models/projecttype');
+var Fpbilling = require('./models/fpbilling');
 
 var encrdecr=require('../security/encrdecr.js');
  
@@ -230,6 +231,29 @@ function getProjecttypes(res){
 			res.json(projecttype);
 		}).sort( { PROJECT_TYPE_ID: 1 } );
 };
+//*********************************SECTION FPBILLING**************************************************
+function getFpbillings(res){
+	Fpbilling.find(function(err, fpbilling) {		
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				res.send(err)
+			res.json(fpbilling); 
+		}).sort( { WON: 1 } );
+};
+
+function getFpbillingsByInternalID(req,res){
+	console.log(req.params.internalid);
+	Fpbilling.find({_id : req.params.internalid},function(err, fpbilling) {
+		res.header("Access-Control-Allow-Origin", "*");
+      	res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			if (err)
+				res.send(err)
+			res.json(fpbilling); 
+		});
+};
+
 
 //*********************************END OF ALL SECTIONS************************************************
 module.exports = function(app) {
@@ -559,6 +583,74 @@ module.exports = function(app) {
 		  if (err)
 				res.send(err);
 			getProjectdetails(res);
+		};																
+		
+	});
+
+//***************************************END OF PROJECT DETAIL************************************************
+
+//***************************************START OF FPBILLING************************************************
+	app.get('/api/fpbillings', function(req, res) {
+		getFpbillings(res);
+	});	
+	
+	app.get('/api/fpbillings/:internalid/:rnd', function(req, res) {		
+		getFpbillingsByInternalID(req,res);
+	});
+	
+	app.delete('/api/fpbillings/:fpbilling_id', function(req, res) {
+		console.log(req.params.fpbilling_id);
+		Fpbilling.remove({
+			_id : req.params.fpbilling_id
+		}, function(err, todo) {
+			if (err)
+				res.send(err);
+			getFpbillings(res);
+		});
+	});
+
+	app.post('/api/fpbillings', function(req, res) {
+		console.log(req.body);
+		Fpbilling.create({
+			WON : req.body.WON,
+			bill_amount : req.body.bill_amount,
+			billing_date : req.body.billing_date,
+			bil_desc_id : req.body.bil_desc_id,
+			CREATED_BY : req.body.CREATED_BY,
+			CREATED_ON : req.body.CREATED_ON,			
+			UPDATED_BY : req.body.UPDATED_BY,
+			UPDATED_ON : req.body.UPDATED_ON,
+			done : false
+		}, function(err, todo) {
+			if (err)
+				res.send(err);
+			res.json(true);
+		});
+	});
+
+	app.post('/api/fpbillings/:internalid', function(req, res) {		
+		console.log(req.body);
+		console.log(req.params.internalid);
+		
+		var conditions = { _id : req.params.internalid }
+		  , update = { 
+		  	WON : req.body.WON,
+			bill_amount : req.body.bill_amount,
+			billing_date : req.body.billing_date,
+			bil_desc_id : req.body.bil_desc_id,
+			CREATED_BY : req.body.CREATED_BY,
+			CREATED_ON : req.body.CREATED_ON,			
+			UPDATED_BY : req.body.UPDATED_BY,
+			UPDATED_ON : req.body.UPDATED_ON,
+		  }
+		  , options = { multi: true };
+
+		Fpbilling.update(conditions, update, options, callback);
+
+		function callback (err, numAffected) {
+		  if (err)
+				res.send(err);
+			getFpbillings(res);
 		};																
 		
 	});
