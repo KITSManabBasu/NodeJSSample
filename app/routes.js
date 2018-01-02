@@ -13,6 +13,7 @@ var Projectdetail = require('./models/projectdetail');
 var Businessarea = require('./models/businessarea');
 var Projecttype = require('./models/projecttype');
 var Fpbilling = require('./models/fpbilling');
+var Billdescrips=require('./models/billdescrips');
 
 var encrdecr=require('../security/encrdecr.js');
  
@@ -253,7 +254,28 @@ function getFpbillingsByInternalID(req,res){
 			res.json(fpbilling); 
 		});
 };
+//*********************************SECTION BILLING DESCRIPTION**************************************************
+function getBilldescrips(res){
+	Billdescrips.find(function(err, billdescrip) {		
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				res.send(err)
+			res.json(billdescrip); 
+		}).sort( { DESCRIPTION: 1 } );
+};
 
+function getBilldescripsByInternalID(req,res){
+	console.log(req.params.internalid);
+	Billdescrips.find({_id : req.params.internalid},function(err, billdescrip) {
+		res.header("Access-Control-Allow-Origin", "*");
+      	res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			if (err)
+				res.send(err)
+			res.json(billdescrip); 
+		});
+};
 
 //*********************************END OF ALL SECTIONS************************************************
 module.exports = function(app) {
@@ -655,7 +677,72 @@ module.exports = function(app) {
 		
 	});
 
-//***************************************END OF PROJECT DETAIL************************************************
+//***************************************END OF FPBILLING************************************************
+
+
+//***************************************START OF Billdescrips************************************************
+	app.get('/api/billdescrips', function(req, res) {
+		getBilldescrips(res);
+	});	
+	
+	app.get('/api/billdescrips/:internalid/:rnd', function(req, res) {		
+		getBilldescripsByInternalID(req,res);
+	});
+	
+	app.delete('/api/billdescrips/:billdescrip_id', function(req, res) {
+		console.log(req.params.billdescrip_id);
+		Billdescrips.remove({
+			_id : req.params.billdescrip_id
+		}, function(err, todo) {
+			if (err)
+				res.send(err);
+			getBilldescrips(res);
+		});
+	});
+
+	app.post('/api/billdescrips', function(req, res) {
+		console.log(req.body);
+		Billdescrips.create({
+			TYPE : req.body.TYPE,
+			DESCRIPTION : req.body.DESCRIPTION,			
+			CREATED_BY : req.body.CREATED_BY,
+			CREATED_WHEN : req.body.CREATED_WHEN,			
+			UPDATED_BY : req.body.UPDATED_BY,
+			UPDATED_WHEN : req.body.UPDATED_WHEN,
+			done : false
+		}, function(err, todo) {
+			if (err)
+				res.send(err);
+			res.json(true);
+		});
+	});
+
+	app.post('/api/billdescrips/:internalid', function(req, res) {		
+		console.log(req.body);
+		console.log(req.params.internalid);
+		
+		var conditions = { _id : req.params.internalid }
+		  , update = { 
+		  	TYPE : req.body.TYPE,
+			DESCRIPTION : req.body.DESCRIPTION,			
+			CREATED_BY : req.body.CREATED_BY,
+			CREATED_WHEN : req.body.CREATED_WHEN,			
+			UPDATED_BY : req.body.UPDATED_BY,
+			UPDATED_WHEN : req.body.UPDATED_WHEN,
+		  }
+		  , options = { multi: true };
+
+		Billdescrips.update(conditions, update, options, callback);
+
+		function callback (err, numAffected) {
+		  if (err)
+				res.send(err);
+			getBilldescrips(res);
+		};																
+		
+	});
+
+//***************************************END OF Billdescrips************************************************
     
 
 
