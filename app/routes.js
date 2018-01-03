@@ -16,6 +16,8 @@ var Fpbilling = require('./models/fpbilling');
 var Billdescrips=require('./models/billdescrips');
 var Allocation=require('./models/allocation');
 var Allocationdetail=require('./models/allocationdetail');
+var Freeze=require('./models/freeze');
+
 
 var encrdecr=require('../security/encrdecr.js');
  
@@ -278,7 +280,7 @@ function getBilldescripsByInternalID(req,res){
 			res.json(billdescrip); 
 		});
 };
-//*********************************SECTION ALLOCATION**************************************************
+//*********************************SECTION ALLOCATION*************************************************************
 function getAllocations(res){
 	Allocation.find(function(err, allocation) {		
 			res.header("Access-Control-Allow-Origin", "*");
@@ -412,6 +414,18 @@ undefined
 		    	res.json(element);
 
 }
+//*********************************SECTION FREEZE**************************************************
+function getFreezes(res){
+	Freeze.find(function(err, freeze) {		
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				res.send(err)
+			res.json(freeze); 
+		});
+};
+
 
 //*********************************END OF ALL SECTIONS************************************************
 module.exports = function(app) {
@@ -949,10 +963,36 @@ module.exports = function(app) {
 
 //***************************************END OF Allocation************************************************
     
+//***************************************START OF Freeze************************************************
+app.get('/api/freezes/:rnd', function(req, res) {
+		getFreezes(res);
+	});
 
+app.post('/api/freezes/:slno', function(req, res) {		
+		console.log(req.body);
+		console.log(req.params.internalid);
+		
+		var conditions = { SLNO : req.params.slno }
+		  , update = { 
+		  	StartDate : req.body.StartDate,
+			EndDate : req.body.EndDate,			
+			Freeze : req.body.Freeze,
+			UpdatedBy : req.body.UpdatedBy,			
+			UpdatedOn : req.body.UpdatedOn,			
+		  }
+		  , options = { multi: true };
 
+		Freeze.update(conditions, update, options, callback);
 
+		function callback (err, numAffected) {
+		  if (err)
+				res.send(err);
+			getAllocations(res);
+		};																
+		
+	});
 
+//***************************************END OF Freeze************************************************
 
 
 
