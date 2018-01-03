@@ -14,6 +14,7 @@ var Businessarea = require('./models/businessarea');
 var Projecttype = require('./models/projecttype');
 var Fpbilling = require('./models/fpbilling');
 var Billdescrips=require('./models/billdescrips');
+var Allocation=require('./models/allocation');
 
 var encrdecr=require('../security/encrdecr.js');
  
@@ -274,6 +275,31 @@ function getBilldescripsByInternalID(req,res){
 			if (err)
 				res.send(err)
 			res.json(billdescrip); 
+		});
+};
+//*********************************SECTION ALLOCATION**************************************************
+function getAllocations(res){
+	Allocation.find(function(err, allocation) {		
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+			{
+				console.log(err);
+				res.send(err)
+			}
+			res.json(allocation); 
+		}).sort( { userid: 1 } );
+};
+
+function getAllocationsByInternalID(req,res){
+	console.log(req.params.internalid);
+	Allocation.find({_id : req.params.internalid},function(err, allocation) {
+		res.header("Access-Control-Allow-Origin", "*");
+      	res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			if (err)
+				res.send(err)
+			res.json(allocation); 
 		});
 };
 
@@ -743,6 +769,71 @@ module.exports = function(app) {
 	});
 
 //***************************************END OF Billdescrips************************************************
+//***************************************START OF Allocation************************************************
+	app.get('/api/allocations', function(req, res) {
+		getAllocations(res);
+	});	
+	
+	app.get('/api/allocations/:internalid/:rnd', function(req, res) {		
+		getAllocationsByInternalID(req,res);
+	});
+	
+	app.delete('/api/allocations/:allocation_id', function(req, res) {
+		console.log(req.params.allocation_id);
+		Allocation.remove({
+			_id : req.params.allocation_id
+		}, function(err, todo) {
+			if (err)
+				res.send(err);
+			getAllocations(res);
+		});
+	});
+
+	app.post('/api/allocations', function(req, res) {
+		console.log(req.body);
+		Allocation.create({
+			userid : req.body.userid,
+			PROJECT_CODE : req.body.PROJECT_CODE,			
+			WON : req.body.WON,
+			BIL_DESC_ID : req.body.BIL_DESC_ID,			
+			START_DATE : req.body.START_DATE,
+			END_DATE : req.body.END_DATE,
+			DAILY_RATE : req.body.DAILY_RATE,
+			done : false
+		}, function(err, todo) {
+			if (err)
+				res.send(err);
+			res.json(true);
+		});
+	});
+
+	app.post('/api/allocations/:internalid', function(req, res) {		
+		console.log(req.body);
+		console.log(req.params.internalid);
+		
+		var conditions = { _id : req.params.internalid }
+		  , update = { 
+		  	userid : req.body.userid,
+			PROJECT_CODE : req.body.PROJECT_CODE,			
+			WON : req.body.WON,
+			BIL_DESC_ID : req.body.BIL_DESC_ID,			
+			START_DATE : req.body.START_DATE,
+			END_DATE : req.body.END_DATE,
+			DAILY_RATE : req.body.DAILY_RATE,
+		  }
+		  , options = { multi: true };
+
+		Allocation.update(conditions, update, options, callback);
+
+		function callback (err, numAffected) {
+		  if (err)
+				res.send(err);
+			getAllocations(res);
+		};																
+		
+	});
+
+//***************************************END OF Allocation************************************************
     
 
 
