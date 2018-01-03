@@ -15,6 +15,7 @@ var Projecttype = require('./models/projecttype');
 var Fpbilling = require('./models/fpbilling');
 var Billdescrips=require('./models/billdescrips');
 var Allocation=require('./models/allocation');
+var Allocationdetail=require('./models/allocationdetail');
 
 var encrdecr=require('../security/encrdecr.js');
  
@@ -302,6 +303,136 @@ function getAllocationsByInternalID(req,res){
 			res.json(allocation); 
 		});
 };
+function getAllocationdetails(res){
+	Allocation.find(function(err, allocation) {		
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+			{
+				console.log(err);
+				res.send(err)
+			}
+			allocationdata=allocation; 
+			console.log(allocationdata.length);
+			getalloProject(res,allocationdata);
+			/*var i;
+			var element = [];
+			var projectdetaildata;
+			Projectdetail.find(function(err, projectdetail) {		
+			//res.header("Access-Control-Allow-Origin", "*");
+      		//res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				{
+					res.send(err)
+				}
+			    projectdetaildata=projectdetail; 
+				console.log(projectdetaildata.length); 
+
+				for(i = 0; i < allocationdata.length; i++) {
+		        allocationdetail = new Allocationdetail();
+		        allocationdetail.PROJECT_CODE = allocationdata[i].PROJECT_CODE;
+		        allocationdetail.PROJECT_NAME =projectdetaildata.find(o => o._id == allocationdata[i].PROJECT_CODE).PROJECT_NAME;
+		        //projectdetaildata.filter(function(value){ return value._id=="5a4a374b478d72a0b140abb4";});
+		        element.push(allocationdetail)
+		        //newPerson.save(function (err) {});
+		    	}
+		    	res.json(element);
+
+			});
+			
+			*/
+			 
+		    
+			
+		}).sort( { userid: 1 } );
+};
+function getalloProject(res,allocationdata){			
+			
+			var projectdetaildata;
+			Projectdetail.find(function(err, projectdetail) {		
+			//res.header("Access-Control-Allow-Origin", "*");
+      		//res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				{
+					res.send(err)
+				}
+			    projectdetaildata=projectdetail; 
+				console.log(projectdetaildata.length); 
+
+				getalloProjectUser(res,allocationdata,projectdetaildata);
+
+			});
+};
+function getalloProjectUser(res,allocationdata,projectdetaildata){	
+	var userdetaildata;
+	User.find(function(err, users) {
+			//res.header("Access-Control-Allow-Origin", "*");
+      		//res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			if (err)
+				res.send(err)
+			userdetaildata=users; // return all todos in JSON format
+			getalloProjectUserWon(res,allocationdata,projectdetaildata,userdetaildata);
+				
+		
+		}).sort( { firstname: 1 } );
+
+}
+function getalloProjectUserWon(res,allocationdata,projectdetaildata,userdetaildata){
+	var wondetaildata;
+	Won.find(function(err, won) {
+		console.log('called getWonMasters');
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				res.send(err)
+			wondetaildata=won;	
+			getalloProjectUserWonBill(res,allocationdata,projectdetaildata,userdetaildata,wondetaildata);
+			
+
+		});
+}
+function getalloProjectUserWonBill(res,allocationdata,projectdetaildata,userdetaildata,wondetaildata){
+	var billdescripsdata;
+	Billdescrips.find(function(err, billdescrip) {		
+			//res.header("Access-Control-Allow-Origin", "*");
+      		//res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				res.send(err)
+			billdescripsdata=billdescrip; 
+			getalloProjectUserWonBillAll(res,allocationdata,projectdetaildata,userdetaildata,wondetaildata,billdescripsdata);
+				
+		});
+}
+function getalloProjectUserWonBillAll(res,allocationdata,projectdetaildata,userdetaildata,wondetaildata,billdescripsdata){
+	var i;
+				var element = [];
+				for(i = 0; i < allocationdata.length; i++) {
+		        allocationdetail = new Allocationdetail();
+		        allocationdetail.PROJECT_CODE = allocationdata[i].PROJECT_CODE;
+		        allocationdetail.PROJECT_NAME =projectdetaildata.find(o => o._id == allocationdata[i].PROJECT_CODE).PROJECT_CODE+'-'+projectdetaildata.find(o => o._id == allocationdata[i].PROJECT_CODE).PROJECT_NAME;
+		        //projectdetaildata.filter(function(value){ return value._id=="5a4a374b478d72a0b140abb4";});
+		        allocationdetail.userid = allocationdata[i].userid;
+		        allocationdetail.username =userdetaildata.find(o => o._id == allocationdata[i].userid).firstname+ ' ' +userdetaildata.find(o => o._id == allocationdata[i].userid).lastname;
+		        allocationdetail.useremployeeid =userdetaildata.find(o => o._id == allocationdata[i].userid).employeeid;
+		        allocationdetail.WON=allocationdata[i].WON;
+		        allocationdetail.WONDESC =wondetaildata.find(o => o.WON == allocationdata[i].WON).WON_DESC;
+		        allocationdetail.BIL_DESC_ID=allocationdata[i].BIL_DESC_ID;
+		        allocationdetail.BIL_DESC=billdescripsdata.find(o => o._id == allocationdata[i].BIL_DESC_ID).DESCRIPTION;
+		        allocationdetail.BILLTYPE=billdescripsdata.find(o => o._id == allocationdata[i].BIL_DESC_ID).TYPE;
+		        allocationdetail.START_DATE=allocationdata[i].START_DATE;
+		        allocationdetail.END_DATE=allocationdata[i].END_DATE;
+		        allocationdetail.DAILY_RATE=allocationdata[i].DAILY_RATE;
+		        allocationdetail._id=allocationdata[i]._id;
+		        element.push(allocationdetail)
+		    	}
+		    	res.json(element);
+
+}
 
 //*********************************END OF ALL SECTIONS************************************************
 module.exports = function(app) {
@@ -776,6 +907,10 @@ module.exports = function(app) {
 	
 	app.get('/api/allocations/:internalid/:rnd', function(req, res) {		
 		getAllocationsByInternalID(req,res);
+	});
+
+	app.get('/api/allocationdetails', function(req, res) {
+		getAllocationdetails(res);
 	});
 	
 	app.delete('/api/allocations/:allocation_id', function(req, res) {
