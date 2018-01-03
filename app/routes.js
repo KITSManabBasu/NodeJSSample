@@ -375,6 +375,7 @@ function getalloProjectUserWonBill(res,allocationdata,projectdetaildata,userdeta
 			if (err)
 				res.send(err)
 			billdescripsdata=billdescrip; 
+			
 			getalloProjectUserWonBillAll(res,allocationdata,projectdetaildata,userdetaildata,wondetaildata,billdescripsdata);
 				
 		});
@@ -393,8 +394,10 @@ function getalloProjectUserWonBillAll(res,allocationdata,projectdetaildata,userd
 		        allocationdetail.WON=allocationdata[i].WON;
 		        allocationdetail.WONDESC =wondetaildata.find(o => o.WON == allocationdata[i].WON).WON_DESC;
 		        allocationdetail.BIL_DESC_ID=allocationdata[i].BIL_DESC_ID;
-		        allocationdetail.BIL_DESC=billdescripsdata.find(o => o._id == allocationdata[i].BIL_DESC_ID).DESCRIPTION;
-		        allocationdetail.BILLTYPE=billdescripsdata.find(o => o._id == allocationdata[i].BIL_DESC_ID).TYPE;
+		        allocationdetail.BIL_DESC='';
+		        allocationdetail.BILLTYPE='';
+		        /*allocationdetail.BIL_DESC=billdescripsdata.find(o => o._id == allocationdata[i].BIL_DESC_ID).DESCRIPTION;
+		        allocationdetail.BILLTYPE=billdescripsdata.find(o => o._id == allocationdata[i].BIL_DESC_ID).TYPE;*/
 		        allocationdetail.START_DATE=allocationdata[i].START_DATE;
 		        allocationdetail.END_DATE=allocationdata[i].END_DATE;
 		        allocationdetail.DAILY_RATE=allocationdata[i].DAILY_RATE;
