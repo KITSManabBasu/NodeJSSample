@@ -316,35 +316,6 @@ function getAllocationdetails(res){
 			allocationdata=allocation; 
 			console.log(allocationdata.length);
 			getalloProject(res,allocationdata);
-			/*var i;
-			var element = [];
-			var projectdetaildata;
-			Projectdetail.find(function(err, projectdetail) {		
-			//res.header("Access-Control-Allow-Origin", "*");
-      		//res.header("Access-Control-Allow-Headers", "X-Requested-With");
-			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
-			if (err)
-				{
-					res.send(err)
-				}
-			    projectdetaildata=projectdetail; 
-				console.log(projectdetaildata.length); 
-
-				for(i = 0; i < allocationdata.length; i++) {
-		        allocationdetail = new Allocationdetail();
-		        allocationdetail.PROJECT_CODE = allocationdata[i].PROJECT_CODE;
-		        allocationdetail.PROJECT_NAME =projectdetaildata.find(o => o._id == allocationdata[i].PROJECT_CODE).PROJECT_NAME;
-		        //projectdetaildata.filter(function(value){ return value._id=="5a4a374b478d72a0b140abb4";});
-		        element.push(allocationdetail)
-		        //newPerson.save(function (err) {});
-		    	}
-		    	res.json(element);
-
-			});
-			
-			*/
-			 
-		    
 			
 		}).sort( { userid: 1 } );
 };
@@ -352,8 +323,8 @@ function getalloProject(res,allocationdata){
 			
 			var projectdetaildata;
 			Projectdetail.find(function(err, projectdetail) {		
-			//res.header("Access-Control-Allow-Origin", "*");
-      		//res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
 			if (err)
 				{
@@ -369,8 +340,8 @@ function getalloProject(res,allocationdata){
 function getalloProjectUser(res,allocationdata,projectdetaildata){	
 	var userdetaildata;
 	User.find(function(err, users) {
-			//res.header("Access-Control-Allow-Origin", "*");
-      		//res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			if (err)
 				res.send(err)
 			userdetaildata=users; // return all todos in JSON format
@@ -398,8 +369,8 @@ function getalloProjectUserWon(res,allocationdata,projectdetaildata,userdetailda
 function getalloProjectUserWonBill(res,allocationdata,projectdetaildata,userdetaildata,wondetaildata){
 	var billdescripsdata;
 	Billdescrips.find(function(err, billdescrip) {		
-			//res.header("Access-Control-Allow-Origin", "*");
-      		//res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
 			if (err)
 				res.send(err)
