@@ -632,9 +632,9 @@ module.exports = function(app) {
 			GEO_ID : req.body.GEO_ID,
 			OWNER_NUMBER : req.body.OWNER_NUMBER,
 			CREATED_BY : req.body.CREATED_BY,
-			CREATED_ON : req.body.CREATED_ON,
+			//CREATED_ON : req.body.CREATED_ON,
 			UPDATED_BY : req.body.UPDATED_BY,
-			UPDATED_ON : req.body.UPDATED_ON,
+			//UPDATED_ON : req.body.UPDATED_ON,
 			done : false
 		}, function(err, todo) {
 			if (err)
@@ -657,10 +657,10 @@ module.exports = function(app) {
 			END_DATE : req.body.END_DATE,
 			GEO_ID : req.body.GEO_ID,
 			OWNER_NUMBER : req.body.OWNER_NUMBER,
-			CREATED_BY : req.body.CREATED_BY,
-			CREATED_ON : req.body.CREATED_ON,
+			//CREATED_BY : req.body.CREATED_BY,
+			//CREATED_ON : req.body.CREATED_ON,
 			UPDATED_BY : req.body.UPDATED_BY,
-			UPDATED_ON : req.body.UPDATED_ON,
+			UPDATED_ON : Date.now(),
 		  }
 		  , options = { multi: true };
 
@@ -994,11 +994,22 @@ app.post('/api/freezes/:slno', function(req, res) {
 
 //***************************************END OF Freeze************************************************
 
+app.get('/api/pocwon/:qdate', function(req, res) {
+	var queryDate = new Date(req.params.qdate)
+	var condition = {
+        'START_DATE':{ $gte: queryDate }
+    };
+		Won.find(condition,function(err, won) {
+		console.log('called poc won');
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
 
-
-
-
-
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				res.send(err)
+			res.json(won);
+		});
+	});	
 
 
 
