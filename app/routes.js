@@ -166,7 +166,7 @@ function getWons(res){
 };
 function getWonByuniqueID(req,res){
 	console.log(req.params.uniqueid);
-	Won.find({WON : req.params.uniqueid},function(err, won) {
+	Won.findOne({WON : req.params.uniqueid},function(err, won) {
 		res.header("Access-Control-Allow-Origin", "*");
       	res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			if (err)
@@ -174,9 +174,9 @@ function getWonByuniqueID(req,res){
 			res.json(won); 
 		});
 };
-function getUserByInternalID(req,res){
+function getWonByInternalID(req,res){
 	console.log(req.params.internalid);
-	Won.find({_id : req.params.internalid},function(err, won) {
+	Won.findOne({_id : req.params.internalid},function(err, won) {
 		res.header("Access-Control-Allow-Origin", "*");
       	res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			if (err)
@@ -605,7 +605,7 @@ module.exports = function(app) {
 		getWonByuniqueID(req,res);
 	});
 	app.get('/api/wons/:internalid/:rnd', function(req, res) {		
-		getUserByInternalID(req,res);
+		getWonByInternalID(req,res);
 	});
 	// delete a user
 	app.delete('/api/wons/:won_id', function(req, res) {
@@ -630,7 +630,7 @@ module.exports = function(app) {
 			START_DATE : req.body.START_DATE,
 			END_DATE : req.body.END_DATE,
 			GEO_ID : req.body.GEO_ID,
-			OWNER_NUMBER : req.body.OWNER_NUMBER,
+			OWNER_ID : req.body.OWNER_ID,
 			CREATED_BY : req.body.CREATED_BY,
 			//CREATED_ON : req.body.CREATED_ON,
 			UPDATED_BY : req.body.UPDATED_BY,
@@ -656,7 +656,7 @@ module.exports = function(app) {
 			START_DATE : req.body.START_DATE,
 			END_DATE : req.body.END_DATE,
 			GEO_ID : req.body.GEO_ID,
-			OWNER_NUMBER : req.body.OWNER_NUMBER,
+			OWNER_ID : req.body.OWNER_ID,
 			//CREATED_BY : req.body.CREATED_BY,
 			//CREATED_ON : req.body.CREATED_ON,
 			UPDATED_BY : req.body.UPDATED_BY,
@@ -999,7 +999,7 @@ app.get('/api/pocwon/:qdate', function(req, res) {
 	var condition = {
         'START_DATE':{ $gte: queryDate }
     };
-		Won.find(condition,function(err, won) {
+		/*Won.find(condition,function(err, won) {
 		console.log('called poc won');
 			res.header("Access-Control-Allow-Origin", "*");
       		res.header("Access-Control-Allow-Headers", "X-Requested-With");
@@ -1009,6 +1009,41 @@ app.get('/api/pocwon/:qdate', function(req, res) {
 				res.send(err)
 			res.json(won);
 		});
+		*/
+		/*Won.find(condition,function(err, won) {
+		console.log('called poc won');
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			//if (err)
+			//	res.send(err)
+			//res.json(won);
+		}).populate('Geos').
+		  exec(function (err, story) {
+		    if (err) return handleError(err);
+		    res.json(story);
+		    //console.log('The author is %s', story.author.name);
+		    // prints "The author is Ian Fleming"
+		  });*/
+
+
+		  Won.findOne({ WON: 8888}).
+		  populate('GEO_ID','LOCATION'). 
+		  exec(function (err, story) {
+		    if (err) return res.send(err);
+		    //res.json(story);
+		    console.log('The author is %s', story.GEO_ID.LOCATION);
+		    res.json(story.GEO_ID.LOCATION);
+		    //console.log('The author is %s', Won.geo.LOCATION);
+		    // prints "The author is Ian Fleming"
+		    
+		   // console.log('The authors age is %s', story.author.age);
+		    // prints "The authors age is null'
+		  })
+
+
+
 	});	
 
 
