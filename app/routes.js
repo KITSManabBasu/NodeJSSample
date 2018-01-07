@@ -54,7 +54,7 @@ function getUsers(res){
 };
 function getUserByID(req,res){
 	console.log(req.params.user_id);
-	User.find({_id : req.params.user_id},function(err, user) {
+	User.findOne({_id : req.params.user_id},function(err, user) {
 		res.header("Access-Control-Allow-Origin", "*");
       	res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
@@ -65,7 +65,7 @@ function getUserByID(req,res){
 };
 function getUserByLoginID(req,res){
 	console.log(req.params.user_id);
-	User.find({userid : req.params.userloginid},function(err, user) {
+	User.findOne({userid : req.params.userloginid},function(err, user) {
 		res.header("Access-Control-Allow-Origin", "*");
       	res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
@@ -198,7 +198,7 @@ function getProjectdetails(res){
 };
 function getProjectdetailByuniqueID(req,res){
 	console.log(req.params.uniqueid);
-	Projectdetail.find({PROJECT_CODE : req.params.uniqueid},function(err, projectdetail) {
+	Projectdetail.findOne({PROJECT_CODE : req.params.uniqueid},function(err, projectdetail) {
 		res.header("Access-Control-Allow-Origin", "*");
       	res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			if (err)
@@ -208,7 +208,7 @@ function getProjectdetailByuniqueID(req,res){
 };
 function getProjectdetailByInternalID(req,res){
 	console.log(req.params.internalid);
-	Projectdetail.find({_id : req.params.internalid},function(err, projectdetail) {
+	Projectdetail.findOne({_id : req.params.internalid},function(err, projectdetail) {
 		res.header("Access-Control-Allow-Origin", "*");
       	res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			if (err)
@@ -238,19 +238,33 @@ function getProjecttypes(res){
 };
 //*********************************SECTION FPBILLING**************************************************
 function getFpbillings(res){
-	Fpbilling.find(function(err, fpbilling) {		
+	/*Fpbilling.find(function(err, fpbilling) {		
 			res.header("Access-Control-Allow-Origin", "*");
       		res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
 			if (err)
 				res.send(err)
 			res.json(fpbilling); 
-		}).sort( { WON: 1 } );
+		}).sort( { WON: 1 } );*/
+
+		 Fpbilling.find().
+		  populate('WON'). 
+		  exec(function (err, story) {
+		    if (err) return res.send(err);
+		    //res.json(story);
+		   // console.log('The author is %s', story.GEO_ID.LOCATION);
+		    res.json(story);
+		    //console.log('The author is %s', Won.geo.LOCATION);
+		    // prints "The author is Ian Fleming"
+		    
+		   // console.log('The authors age is %s', story.author.age);
+		    // prints "The authors age is null'
+		  })
 };
 
 function getFpbillingsByInternalID(req,res){
 	console.log(req.params.internalid);
-	Fpbilling.find({_id : req.params.internalid},function(err, fpbilling) {
+	Fpbilling.findOne({_id : req.params.internalid},function(err, fpbilling) {
 		res.header("Access-Control-Allow-Origin", "*");
       	res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			if (err)
@@ -272,7 +286,7 @@ function getBilldescrips(res){
 
 function getBilldescripsByInternalID(req,res){
 	console.log(req.params.internalid);
-	Billdescrips.find({_id : req.params.internalid},function(err, billdescrip) {
+	Billdescrips.findOne({_id : req.params.internalid},function(err, billdescrip) {
 		res.header("Access-Control-Allow-Origin", "*");
       	res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			if (err)
@@ -282,7 +296,7 @@ function getBilldescripsByInternalID(req,res){
 };
 //*********************************SECTION ALLOCATION*************************************************************
 function getAllocations(res){
-	Allocation.find(function(err, allocation) {		
+	/*Allocation.find(function(err, allocation) {		
 			res.header("Access-Control-Allow-Origin", "*");
       		res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
@@ -293,11 +307,30 @@ function getAllocations(res){
 			}
 			res.json(allocation); 
 		}).sort( { userid: 1 } );
+		*/
+
+		Allocation.find().
+		  populate('PROJECT_CODE').
+		  populate('userid').	
+		  populate('WON'). 
+		  populate('BIL_DESC_ID').
+		  exec(function (err, story) {
+		    if (err) return res.send(err);
+		    //res.json(story);
+		   // console.log('The author is %s', story.GEO_ID.LOCATION);
+		    res.json(story);
+		    //console.log('The author is %s', Won.geo.LOCATION);
+		    // prints "The author is Ian Fleming"
+		    
+		   // console.log('The authors age is %s', story.author.age);
+		    // prints "The authors age is null'
+		  })
+
 };
 
 function getAllocationsByInternalID(req,res){
 	console.log(req.params.internalid);
-	Allocation.find({_id : req.params.internalid},function(err, allocation) {
+	Allocation.findOne({_id : req.params.internalid},function(err, allocation) {
 		res.header("Access-Control-Allow-Origin", "*");
       	res.header("Access-Control-Allow-Headers", "X-Requested-With");
 			if (err)
@@ -464,44 +497,37 @@ module.exports = function(app) {
 			employeeid : req.body.employeeid,
 			title : req.body.selectedTitle,
 			roleid : req.body.selectedRole,
-			roleText : req.body.selectedRoleText,
 
 			teamid : req.body.selectedTeam,
-			teamText : req.body.selectedTeamText,
 
 			firstname : req.body.firstname,
 			middlename : req.body.middlename,
 			lastname : req.body.lastname,
 
 			billingtypeid : req.body.selectedBillingType,
-			billingtypeText : req.body.selectedBillingTypeText,
 
 			teamleadid : req.body.selectedTeamLead,
-			teamleadText : req.body.selectedTeamLeadText,
 			
 			locid : req.body.selectedLoc,
-			locText : req.body.selectedLocText,
 
 			desigid : req.body.selectedDesig,
-			desigText : req.body.selectedDesigText,
 
 			isu : req.body.isu,
 			usertypeid : req.body.selectedUserType,
-			usertypeText : req.body.selectedUserTypeText,
 
 			companyid : req.body.selectedCompany,
-			companyText : req.body.selectedCompanyText,
 
 			mobileno : req.body.mobileno,
 			deskphno : req.body.deskphno,
 			geoid : req.body.selectedGeo,
-			geoText : req.body.selectedGeoText,
 
 			isProjectUser : req.body.isProjectUser,
 			isTimeSheetUser : req.body.isTimeSheetUser,
 			isProjectReportUser : req.body.isProjectReportUser,
 			isTimeSheetReportUser : req.body.isTimeSheetReportUser,
 			isTimeSheetUserAllocation : req.body.isTimeSheetUserAllocation,
+			CREATED_BY : req.body.CREATED_BY,
+			UPDATED_BY : req.body.UPDATED_BY,
 
 			done : false
 		}, function(err, todo) {
@@ -520,44 +546,37 @@ module.exports = function(app) {
 			employeeid : req.body.employeeid,
 			title : req.body.selectedTitle,
 			roleid : req.body.selectedRole,
-			roleText : req.body.selectedRoleText,
 
 			teamid : req.body.selectedTeam,
-			teamText : req.body.selectedTeamText,
 
 			firstname : req.body.firstname,
 			middlename : req.body.middlename,
 			lastname : req.body.lastname,
 
 			billingtypeid : req.body.selectedBillingType,
-			billingtypeText : req.body.selectedBillingTypeText,
 
 			teamleadid : req.body.selectedTeamLead,
-			teamleadText : req.body.selectedTeamLeadText,
 			
 			locid : req.body.selectedLoc,
-			locText : req.body.selectedLocText,
 
 			desigid : req.body.selectedDesig,
-			desigText : req.body.selectedDesigText,
 
 			isu : req.body.isu,
 			usertypeid : req.body.selectedUserType,
-			usertypeText : req.body.selectedUserTypeText,
 
 			companyid : req.body.selectedCompany,
-			companyText : req.body.selectedCompanyText,
 
 			mobileno : req.body.mobileno,
 			deskphno : req.body.deskphno,
 			geoid : req.body.selectedGeo,
-			geoText : req.body.selectedGeoText,
 
 			isProjectUser : req.body.isProjectUser,
 			isTimeSheetUser : req.body.isTimeSheetUser,
 			isProjectReportUser : req.body.isProjectReportUser,
 			isTimeSheetReportUser : req.body.isTimeSheetReportUser,
-			isTimeSheetUserAllocation : req.body.isTimeSheetUserAllocation
+			isTimeSheetUserAllocation : req.body.isTimeSheetUserAllocation,
+			UPDATED_BY : req.body.UPDATED_BY,
+			UPDATED_ON : Date.now()
 		  }
 		  , options = { multi: true };
 
@@ -715,10 +734,8 @@ module.exports = function(app) {
 			ACTIVE : req.body.ACTIVE,
 			BS_NON_BS : req.body.BS_NON_BS,
 			BUDGET_TYPE : req.body.BUDGET_TYPE,
-			USER_ID : req.body.USER_ID,
-			STMP : req.body.STMP,
+			CREATED_BY : req.body.CREATED_BY,
 			UPDATED_BY : req.body.UPDATED_BY,
-			UPDATED_ON : req.body.UPDATED_ON,
 			done : false
 		}, function(err, todo) {
 			if (err)
@@ -742,10 +759,8 @@ module.exports = function(app) {
 			ACTIVE : req.body.ACTIVE,
 			BS_NON_BS : req.body.BS_NON_BS,
 			BUDGET_TYPE : req.body.BUDGET_TYPE,
-			USER_ID : req.body.USER_ID,
-			STMP : req.body.STMP,
 			UPDATED_BY : req.body.UPDATED_BY,
-			UPDATED_ON : req.body.UPDATED_ON,
+			UPDATED_ON : Date.now(),
 		  }
 		  , options = { multi: true };
 
@@ -789,9 +804,7 @@ module.exports = function(app) {
 			billing_date : req.body.billing_date,
 			bil_desc_id : req.body.bil_desc_id,
 			CREATED_BY : req.body.CREATED_BY,
-			CREATED_ON : req.body.CREATED_ON,			
 			UPDATED_BY : req.body.UPDATED_BY,
-			UPDATED_ON : req.body.UPDATED_ON,
 			done : false
 		}, function(err, todo) {
 			if (err)
@@ -810,10 +823,8 @@ module.exports = function(app) {
 			bill_amount : req.body.bill_amount,
 			billing_date : req.body.billing_date,
 			bil_desc_id : req.body.bil_desc_id,
-			CREATED_BY : req.body.CREATED_BY,
-			CREATED_ON : req.body.CREATED_ON,			
 			UPDATED_BY : req.body.UPDATED_BY,
-			UPDATED_ON : req.body.UPDATED_ON,
+			UPDATED_ON : Date.now(),
 		  }
 		  , options = { multi: true };
 
@@ -856,9 +867,7 @@ module.exports = function(app) {
 			TYPE : req.body.TYPE,
 			DESCRIPTION : req.body.DESCRIPTION,			
 			CREATED_BY : req.body.CREATED_BY,
-			CREATED_WHEN : req.body.CREATED_WHEN,			
 			UPDATED_BY : req.body.UPDATED_BY,
-			UPDATED_WHEN : req.body.UPDATED_WHEN,
 			done : false
 		}, function(err, todo) {
 			if (err)
@@ -875,10 +884,8 @@ module.exports = function(app) {
 		  , update = { 
 		  	TYPE : req.body.TYPE,
 			DESCRIPTION : req.body.DESCRIPTION,			
-			CREATED_BY : req.body.CREATED_BY,
-			CREATED_WHEN : req.body.CREATED_WHEN,			
 			UPDATED_BY : req.body.UPDATED_BY,
-			UPDATED_WHEN : req.body.UPDATED_WHEN,
+			UPDATED_ON : Date.now(),
 		  }
 		  , options = { multi: true };
 
@@ -927,6 +934,8 @@ module.exports = function(app) {
 			START_DATE : req.body.START_DATE,
 			END_DATE : req.body.END_DATE,
 			DAILY_RATE : req.body.DAILY_RATE,
+			CREATED_BY : req.body.CREATED_BY,
+			UPDATED_BY : req.body.UPDATED_BY,
 			done : false
 		}, function(err, todo) {
 			if (err)
@@ -948,6 +957,8 @@ module.exports = function(app) {
 			START_DATE : req.body.START_DATE,
 			END_DATE : req.body.END_DATE,
 			DAILY_RATE : req.body.DAILY_RATE,
+			UPDATED_BY : req.body.UPDATED_BY,
+			UPDATED_ON : Date.now(),
 		  }
 		  , options = { multi: true };
 
@@ -977,8 +988,8 @@ app.post('/api/freezes/:slno', function(req, res) {
 		  	StartDate : req.body.StartDate,
 			EndDate : req.body.EndDate,			
 			Freeze : req.body.Freeze,
-			UpdatedBy : req.body.UpdatedBy,			
-			UpdatedOn : req.body.UpdatedOn,			
+			UPDATED_BY : req.body.UPDATED_BY,
+			UPDATED_ON : Date.now(),		
 		  }
 		  , options = { multi: true };
 

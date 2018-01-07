@@ -1,10 +1,7 @@
 var mongoose = require('mongoose');
 
-module.exports = mongoose.model('Freezes', {
-	SLNO : {type : Number, default: 0},
-	StartDate :  {type: Date, default: Date.now},
-	EndDate : {type: Date, default: Date.now},
-	Freeze : {type: Boolean, default: true},
+module.exports = mongoose.model('Budgetcategories', {	
+	BUDGET_CATEGORY_DESC : {type : String, default: ''},
 	CREATED_BY : {type : String, default: ''},
 	CREATED_ON : {type: Date, default: Date.now},
 	UPDATED_BY : {type : String, default: ''},
