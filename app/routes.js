@@ -16,6 +16,7 @@ var Fpbilling = require('./models/fpbilling');
 var Billdescrips=require('./models/billdescrips');
 var Allocation=require('./models/allocation');
 var Allocationdetail=require('./models/allocationdetail');
+var Timesheet = require('./models/timesheet');
 var Freeze=require('./models/freeze');
 
 
@@ -447,6 +448,58 @@ undefined
 		    	res.json(element);
 
 }
+
+//*********************************SECTION TIMESHEET**************************************************
+function getAllocationByUserIDandDate(req,res){
+    var userId = req.params.userId;
+    var queryDate = new Date(req.params.startDateofWeek);
+    var condition = {
+        'userid': userId,
+		'START_DATE':{ $gte: queryDate },
+        'END_DATE':{$lte : queryDate}
+    };
+
+    //Allocation.find(condition);
+    Allocation.find(condition,function(err, allocation) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers", "X-Requested-With");
+        // if there is an error retrieving, send the error. nothing after res.send(err) will execute
+        if (err)
+            res.send(err);
+        var validAllocation = allocation;
+        console.log(allocation);
+        /*allocation.forEach(function(item) {
+			//check if queryDate falls between any allocation start date and end date
+			if(queryDate >= new Date(item.START_DATE) && queryDate <= new Date(item.END_DATE))
+			{
+				validAllocation = item;
+			}
+        });*/
+        if(validAllocation)
+		{
+            Allocation.find({_id : validAllocation._id}).populate('PROJECT_CODE').exec(function(err, projectAllocation) {
+                console.log(JSON.stringify(projectAllocation));
+                res.json(projectAllocation);
+            })
+		}
+		else {
+            res.json(validAllocation);
+        }
+    });
+};
+
+function getTimesheetByUserIDandDate(req,res){
+    console.log(req.params.userId);
+    console.log(req.params.startDateofWeek);
+    Timesheet.find({userId : req.params.userId, startDateofWeek: req.params.startDateofWeek},function(err, timesheet) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers", "X-Requested-With");
+        // if there is an error retrieving, send the error. nothing after res.send(err) will execute
+        if (err)
+            res.send(err)
+        res.json(timesheet); // return all todos in JSON format
+    });
+};
 //*********************************SECTION FREEZE**************************************************
 function getFreezes(res){
 	Freeze.find(function(err, freeze) {		
@@ -457,6 +510,22 @@ function getFreezes(res){
 				res.send(err)
 			res.json(freeze); 
 		});
+};
+
+function getActiveFreezeDates(res){
+    var condition = {
+        'Freeze': true
+    };
+
+    Freeze.find(condition,function(err, freeze) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers", "X-Requested-With");
+        // if there is an error retrieving, send the error. nothing after res.send(err) will execute
+        if (err)
+            res.send(err);
+        console.log(freeze);
+        res.json(freeze);
+    });
 };
 
 
@@ -973,11 +1042,100 @@ module.exports = function(app) {
 	});
 
 //***************************************END OF Allocation************************************************
+
+//***************************************START OF TIMESHEET************************************************
+    app.get('/api/allocation/:userId/:startDateofWeek', function(req, res) {
+        console.log('before call allocation by userId and date');
+        getAllocationByUserIDandDate(req,res);
+    });
+
+    app.get('/api/timesheet/:userId/:startDateofWeek', function(req, res) {
+        console.log('before call timesheet by userId and date');
+        getTimesheetByUserIDandDate(req,res);
+    });
+
+    app.post('/api/timesheet', function(req, res) {
+        // create a timesheet, information comes from AJAX request from Angular
+
+        console.log("Timesheet Saved");
+        console.log(req.body);
+        Timesheet.create({
+            userId : req.body.userId,
+            startDateofWeek : req.body.startDate,
+            endDateofWeek : req.body.endDate,
+            projectCode : req.body.projectCode,
+            projectSundayHour : req.body.projectSundayHour,
+            projectMondayHour : req.body.projectMondayHour,
+            projectTuesdayHour : req.body.projectTuesdayHour,
+            projectWednesdayHour : req.body.projectWednesdayHour,
+            projectThursdayHour : req.body.projectThursdayHour,
+            projectFridayHour : req.body.projectFridayHour,
+            projectSaturdayHour : req.body.projectSaturdayHour,
+            leaveSundayHour : req.body.leaveSundayHour,
+            leaveMondayHour : req.body.leaveMondayHour,
+            leaveTuesdayHour : req.body.leaveTuesdayHour,
+            leaveWednesdayHour : req.body.leaveWednesdayHour,
+            leaveThursdayHour : req.body.leaveThursdayHour,
+            leaveFridayHour : req.body.leaveFridayHour,
+            leaveSaturdayHour : req.body.leaveSaturdayHour,
+            allocationId : req.body.allocationId
+        }, function(err, todo) {
+            if (err)
+                res.send(err);
+            res.json(true);
+        });
+    });
+
+    app.post('/api/timesheet/:timesheetId', function(req, res) {
+        console.log(req.params.timesheetId);
+        //console.log(req.body.selectedRole);
+        //if(req.body.selectedRole==='')
+        //console.log('Value Blank');
+        var conditions = { _id : req.params.timesheetId }
+            , update = {
+            userId : req.body.userId,
+            startDateofWeek : req.body.startDate,
+            endDateofWeek : req.body.endDate,
+            projectCode : req.body.projectCode,
+            projectSundayHour : req.body.projectSundayHour,
+            projectMondayHour : req.body.projectMondayHour,
+            projectTuesdayHour : req.body.projectTuesdayHour,
+            projectWednesdayHour : req.body.projectWednesdayHour,
+            projectThursdayHour : req.body.projectThursdayHour,
+            projectFridayHour : req.body.projectFridayHour,
+            projectSaturdayHour : req.body.projectSaturdayHour,
+            leaveSundayHour : req.body.leaveSundayHour,
+            leaveMondayHour : req.body.leaveMondayHour,
+            leaveTuesdayHour : req.body.leaveTuesdayHour,
+            leaveWednesdayHour : req.body.leaveWednesdayHour,
+            leaveThursdayHour : req.body.leaveThursdayHour,
+            leaveFridayHour : req.body.leaveFridayHour,
+            leaveSaturdayHour : req.body.leaveSaturdayHour,
+            allocationId : req.body.allocationId
+        }
+            , options = { multi: true };
+
+        Timesheet.update(conditions, update, options, callback);
+
+        function callback (err, numAffected) {
+            if (err)
+                res.send(err);
+            res.json(true);
+        };
+
+    });
+
+//***************************************END OF TIMESHEET************************************************
     
 //***************************************START OF Freeze************************************************
 app.get('/api/freezes/:rnd', function(req, res) {
 		getFreezes(res);
 	});
+
+app.get('/api/freezes', function(req, res) {
+		getActiveFreezeDates(res);
+	});
+
 
 app.post('/api/freezes/:slno', function(req, res) {		
 		console.log(req.body);
