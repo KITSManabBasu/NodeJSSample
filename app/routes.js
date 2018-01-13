@@ -1459,7 +1459,21 @@ app.get('/api/extractfpbilling/:startdate/:enddate/:displayperiod/:displaystart/
 			const report = excel.buildExport(
 			  [ // <- Notice that this is an array. Pass multiple sheets to create multi sheet report 
 			    {
-			      name: 'Report', // <- Specify sheet name (optional) 
+			      name: 'FP Billing', // <- Specify sheet name (optional) 
+			      heading: heading, // <- Raw heading array (optional) 
+			      merges: merges, // <- Merge cell ranges 
+			      specification: specification, // <- Report specification 
+			      data: dataset // <-- Report data 
+			    },
+			    {
+			      name: 'Cover Sheet- Onsite', // <- Specify sheet name (optional) 
+			      heading: heading, // <- Raw heading array (optional) 
+			      merges: merges, // <- Merge cell ranges 
+			      specification: specification, // <- Report specification 
+			      data: dataset // <-- Report data 
+			    },
+			    {
+			      name: 'Cover Sheet - Offshore', // <- Specify sheet name (optional) 
 			      heading: heading, // <- Raw heading array (optional) 
 			      merges: merges, // <- Merge cell ranges 
 			      specification: specification, // <- Report specification 
@@ -1469,7 +1483,7 @@ app.get('/api/extractfpbilling/:startdate/:enddate/:displayperiod/:displaystart/
 			);
 			 
 			// You can then return this straight 
-			res.attachment('report.xlsx'); // This is sails.js specific (in general you need to set headers) 
+			res.attachment('PTS Report.xlsx'); // This is sails.js specific (in general you need to set headers) 
 			return res.send(report);
 
 		    //End of excel report
