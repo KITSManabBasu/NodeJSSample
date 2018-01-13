@@ -19,11 +19,45 @@ var Allocationdetail=require('./models/allocationdetail');
 var Timesheet = require('./models/timesheet');
 var Freeze=require('./models/freeze');
 const excel = require('node-excel-export');
+var Week=require('./models/week');
+var Period=require('./models/period');
 
 
 var encrdecr=require('../security/encrdecr.js');
  
 var hw = encrdecr.encrypt("hello world");
+
+const styles = {
+			  headerDark: {
+			    fill: {
+			      fgColor: {
+			        rgb: 'FF000000'
+			      }
+			    },
+			    font: {
+			      color: {
+			        rgb: 'FFFFFFFF'
+			      },
+			      sz: 14,
+			      bold: true,
+			      underline: true
+			    }
+			  },
+			  cellPink: {
+			    fill: {
+			      fgColor: {
+			        rgb: 'FFFFCCFF'
+			      }
+			    }
+			  },
+			  cellGreen: {
+			    fill: {
+			      fgColor: {
+			        rgb: 'FF00FF00'
+			      }
+			    }
+			  }
+			};
 // outputs hello world
 //console.log(hw);
 console.log(encrdecr.decrypt(hw));
@@ -459,9 +493,11 @@ function getAllocationByUserIDandDate(req,res){
 		'START_DATE':{ $gte: queryDate },
         'END_DATE':{$lte : queryDate}
     };
-
-    //Allocation.find(condition);
+   
+  // ,
+    //    'END_DATE':{$lte : new Date("2018-07-01T16:00:00.000Z")}
     Allocation.find(condition,function(err, allocation) {
+    	//Allocation.find({"START_DATE": {"$gte": new Date("2017-12-31T16:00:00.000Z")}},function(err, allocation2) {
         res.header("Access-Control-Allow-Origin", "*");
         res.header("Access-Control-Allow-Headers", "X-Requested-With");
         // if there is an error retrieving, send the error. nothing after res.send(err) will execute
@@ -476,6 +512,9 @@ function getAllocationByUserIDandDate(req,res){
 				validAllocation = item;
 			}
         });*/
+
+        
+
         if(validAllocation)
 		{
             Allocation.find({_id : validAllocation._id}).populate('PROJECT_CODE').exec(function(err, projectAllocation) {
@@ -527,6 +566,28 @@ function getActiveFreezeDates(res){
         console.log(freeze);
         res.json(freeze);
     });
+};
+//*********************************SECTION WEEK AND PERIOD**************************************************
+function getWeeks(res){
+	Week.find(function(err, week) {		
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				res.send(err)
+			res.json(week); 
+		}).sort( { WEEKSTARTDATE: 1 } );
+};
+
+function getPeriods(res){
+	Period.find(function(err, week) {		
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				res.send(err)
+			res.json(week); 
+		}).sort( { WEEKSTARTDATE: 1 } );
 };
 
 
@@ -1163,7 +1224,262 @@ app.post('/api/freezes/:slno', function(req, res) {
 	});
 
 //***************************************END OF Freeze************************************************
+//***************************************START OF WEEK AND PERIOD************************************************
 
+app.get('/api/weekdateupdates/', function(req, res) {
+		
+		Week.find(function(err, weekdta) {		
+			//res.header("Access-Control-Allow-Origin", "*");
+      		//res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+			{
+				console.log(err);
+				res.send(err)
+			}
+			weekdata=weekdta; 
+			console.log(weekdta.length);
+			//console.log(weekdta);
+			
+			for (var i in weekdata) {
+ 				 //console.log(weekdata[i].WEEKSTARTDATE);
+
+ 				 var conditions = { _id : weekdata[i]._id }
+				  , update = { 
+				  	
+					WEEKENDDATE : new Date(weekdata[i].WEEKENDDATE),		
+				  }
+				  , options = { multi: true };
+
+				Week.update(conditions, update, options, callback);
+
+				function callback (err, numAffected) {
+				  if (err)
+						res.send(err);
+					getAllocations(res);
+				};
+			}
+		});
+	});
+app.get('/api/weeks', function(req, res) {
+		getWeeks(res);
+	});
+
+app.get('/api/periods', function(req, res) {
+		getPeriods(res);
+	});
+
+app.get('/api/perioddateupdates/', function(req, res) {
+		
+		Period.find(function(err, perioddta) {		
+			//res.header("Access-Control-Allow-Origin", "*");
+      		//res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+			{
+				console.log(err);
+				res.send(err)
+			}
+			perioddata=perioddta; 
+			console.log(perioddata.length);
+			//console.log(weekdta);
+			
+			for (var i in perioddata) {
+ 				 //console.log(weekdata[i].WEEKSTARTDATE);
+
+ 				 var conditions = { _id : perioddata[i]._id }
+				  , update = { 
+				  	
+					WEEKSTARTDATE : new Date(perioddata[i].WEEKSTARTDATE),		
+				  }
+				  , options = { multi: true };
+
+				Period.update(conditions, update, options, callback);
+
+				function callback (err, numAffected) {
+				  if (err)
+						res.send(err);
+					getAllocations(res);
+				};
+			}
+		});
+	});
+
+//***************************************END OF Week AND PERIOD************************************************
+//***************************************START OF BILLING EXTRACT-FPBILLING************************************************
+app.get('/api/extractfpbilling/:startdate/:enddate/:displayperiod/:displaystart/:displayend', function(req, res) {
+	//http://localhost:8080/api/extractfpbilling/2018-01-01T00:00:00.000Z/2018-01-01T00:00:00.000Z/P1-2017/01-01-2018/01-02-2019
+	var queryStartDate = new Date(req.params.startdate);
+	var queryEndDate = new Date(req.params.enddate);
+	var displayperiod = req.params.displayperiod;
+	var displaystart = req.params.displaystart;
+	var displayend = req.params.displayend;
+
+	var condition = {
+        'billing_date':{ $gte: queryStartDate,$lte: queryEndDate }
+    	};
+
+
+    console.log(condition);
+	/*Fpbilling.find(condition).populate('WON').//populate('OWNER_ID'). 
+		exec(function(err, won) {
+		console.log('called poc won');
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+
+			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err)
+				res.send(err)
+			res.json(won);
+		});
+
+		*/
+		Fpbilling
+		  .find(condition)
+		  .populate({
+			path:     'WON',			
+			populate: { path:  'OWNER_ID',
+				    model: 'Users' }
+		  }	
+
+		  ).sort( { billing_date: 1 } )
+		  .exec(function(err, data){
+		    if (err) return handleError(err);
+		    //res.json(data);
+		    billingdata=data;
+		    //res.json(billingdata);
+		    var result = [];
+				for(i = 0; i < billingdata.length; i++) {				  
+				    result.push({'InvoiceNumber': '', 
+				    	'WON': billingdata[i].WON.WON,
+				    	'WONDescription': billingdata[i].WON.WON_DESC,
+				    	'WONType': billingdata[i].WON.WON_TYPE,
+				    	'Location': billingdata[i].WON.OFF_ON,
+				    	'TeamOwner': billingdata[i].WON.OWNER_ID.firstname+' ' +billingdata[i].WON.OWNER_ID.lastname,
+				    	'BillingDescription': billingdata[i].bil_desc_id,
+				    	'BillingDate': billingdata[i].billing_date,
+				    	'InvoiceOwner': 'KITS',
+				    	'Total': billingdata[i].bill_amount
+
+				    });
+				}				
+				console.log(JSON.stringify(result));
+
+		    //start of excel report	 
+			 
+			//Array of objects representing heading rows (very top) 
+			const heading = [
+			  [{value: 'Fixed Price Billing', style: styles.headerDark}],
+			  ['Billing Period:', displayperiod],
+			  ['Start Date:',displaystart],  // <-- It can be only values 
+			  ['End Date:',displayend],
+			  ['']
+			];
+			 
+			//Here you specify the export structure 
+			const specification = {
+			 
+			  InvoiceNumber: {
+			    displayName: 'Invoice Number',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  WON: {
+			    displayName: 'WON',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  WONDescription: {
+			    displayName: 'WON Description',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  WONType: {
+			    displayName: 'WON Type',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  Location: {
+			    displayName: 'Location',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  TeamOwner: {
+			    displayName: 'Team Owner',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  BillingDescription: {
+			    displayName: 'Billing Description',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  BillingDate: {
+			    displayName: 'Billing Date',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  InvoiceOwner: {
+			    displayName: 'Invoice Owner',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  Total: {
+			    displayName: 'Total(GBP)',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  }
+
+			}
+			 
+			// The data set should have the following shape (Array of Objects) 
+			// The order of the keys is irrelevant, it is also irrelevant if the 
+			// dataset contains more fields as the report is build based on the 
+			// specification provided above. But you should have all the fields 
+			// that are listed in the report specification 
+			const dataset = result;
+
+			/*[
+			  {customer_name: 'IBM', status_id: 1, note: 'some note', misc: 'not shown'},
+			  {customer_name: 'HP', status_id: 0, note: 'some note'},
+			  {customer_name: 'MS', status_id: 0, note: 'some note', misc: 'not shown'}
+			]*/
+			 
+			// Define an array of merges. 1-1 = A:1 
+			// The merges are independent of the data. 
+			// A merge will overwrite all data _not_ in the top-left cell. 
+			const merges = [
+			  { start: { row: 1, column: 1 }, end: { row: 1, column: 5 } }
+			 // { start: { row: 2, column: 1 }, end: { row: 2, column: 5 } },
+			  //{ start: { row: 2, column: 6 }, end: { row: 2, column: 10 } }
+			]
+			 
+			// Create the excel report. 
+			// This function will return Buffer 
+			const report = excel.buildExport(
+			  [ // <- Notice that this is an array. Pass multiple sheets to create multi sheet report 
+			    {
+			      name: 'Report', // <- Specify sheet name (optional) 
+			      heading: heading, // <- Raw heading array (optional) 
+			      merges: merges, // <- Merge cell ranges 
+			      specification: specification, // <- Report specification 
+			      data: dataset // <-- Report data 
+			    }
+			  ]
+			);
+			 
+			// You can then return this straight 
+			res.attachment('report.xlsx'); // This is sails.js specific (in general you need to set headers) 
+			return res.send(report);
+
+		    //End of excel report
+		});
+
+	}
+);
+
+
+//***************************************END OF BILLING EXTRACT-FPBILLING************************************************
 app.get('/api/pocwon/:qdate', function(req, res) {
 	var queryDate = new Date(req.params.qdate)
 	var condition = {
@@ -1218,111 +1534,112 @@ app.get('/api/pocexcel/:startdate/:enddate', function(req, res) {
 	 //app.get('/api/todos/:todo_id/:rnd', function(req, res)
 	 console.log(req.params.startdate);
 	 console.log(req.params.enddate);
-		// You can define styles as json object 
-// More info: https://github.com/protobi/js-xlsx#cell-styles 
-const styles = {
-  headerDark: {
-    fill: {
-      fgColor: {
-        rgb: 'FF000000'
-      }
-    },
-    font: {
-      color: {
-        rgb: 'FFFFFFFF'
-      },
-      sz: 14,
-      bold: true,
-      underline: true
-    }
-  },
-  cellPink: {
-    fill: {
-      fgColor: {
-        rgb: 'FFFFCCFF'
-      }
-    }
-  },
-  cellGreen: {
-    fill: {
-      fgColor: {
-        rgb: 'FF00FF00'
-      }
-    }
-  }
-};
- 
-//Array of objects representing heading rows (very top) 
-const heading = [
-  [{value: 'a1', style: styles.headerDark}, {value: 'b1', style: styles.headerDark}, {value: 'c1', style: styles.headerDark}],
-  ['a2', 'b2', 'c2'] // <-- It can be only values 
-];
- 
-//Here you specify the export structure 
-const specification = {
-  customer_name: { // <- the key should match the actual data key 
-    displayName: 'Customer', // <- Here you specify the column header 
-    headerStyle: styles.headerDark, // <- Header style 
-    cellStyle: function(value, row) { // <- style renderer function 
-      // if the status is 1 then color in green else color in red 
-      // Notice how we use another cell value to style the current one 
-      return (row.status_id == 1) ? styles.cellGreen : {fill: {fgColor: {rgb: 'FFFF0000'}}}; // <- Inline cell style is possible  
-    },
-    width: 120 // <- width in pixels 
-  },
-  status_id: {
-    displayName: 'Status',
-    headerStyle: styles.headerDark,
-    cellFormat: function(value, row) { // <- Renderer function, you can access also any row.property 
-      return (value == 1) ? 'Active' : 'Inactive';
-    },
-    width: '10' // <- width in chars (when the number is passed as string) 
-  },
-  note: {
-    displayName: 'Description',
-    headerStyle: styles.headerDark,
-    cellStyle: styles.cellPink, // <- Cell style 
-    width: 220 // <- width in pixels 
-  }
-}
- 
-// The data set should have the following shape (Array of Objects) 
-// The order of the keys is irrelevant, it is also irrelevant if the 
-// dataset contains more fields as the report is build based on the 
-// specification provided above. But you should have all the fields 
-// that are listed in the report specification 
-const dataset = [
-  {customer_name: 'IBM', status_id: 1, note: 'some note', misc: 'not shown'},
-  {customer_name: 'HP', status_id: 0, note: 'some note'},
-  {customer_name: 'MS', status_id: 0, note: 'some note', misc: 'not shown'}
-]
- 
-// Define an array of merges. 1-1 = A:1 
-// The merges are independent of the data. 
-// A merge will overwrite all data _not_ in the top-left cell. 
-const merges = [
-  { start: { row: 1, column: 1 }, end: { row: 1, column: 10 } },
-  { start: { row: 2, column: 1 }, end: { row: 2, column: 5 } },
-  { start: { row: 2, column: 6 }, end: { row: 2, column: 10 } }
-]
- 
-// Create the excel report. 
-// This function will return Buffer 
-const report = excel.buildExport(
-  [ // <- Notice that this is an array. Pass multiple sheets to create multi sheet report 
-    {
-      name: 'Report', // <- Specify sheet name (optional) 
-      heading: heading, // <- Raw heading array (optional) 
-      merges: merges, // <- Merge cell ranges 
-      specification: specification, // <- Report specification 
-      data: dataset // <-- Report data 
-    }
-  ]
-);
- 
-// You can then return this straight 
-res.attachment('report.xlsx'); // This is sails.js specific (in general you need to set headers) 
-return res.send(report);
+
+			// You can define styles as json object 
+			// More info: https://github.com/protobi/js-xlsx#cell-styles 
+			const styles = {
+			  headerDark: {
+			    fill: {
+			      fgColor: {
+			        rgb: 'FF000000'
+			      }
+			    },
+			    font: {
+			      color: {
+			        rgb: 'FFFFFFFF'
+			      },
+			      sz: 14,
+			      bold: true,
+			      underline: true
+			    }
+			  },
+			  cellPink: {
+			    fill: {
+			      fgColor: {
+			        rgb: 'FFFFCCFF'
+			      }
+			    }
+			  },
+			  cellGreen: {
+			    fill: {
+			      fgColor: {
+			        rgb: 'FF00FF00'
+			      }
+			    }
+			  }
+			};
+			 
+			//Array of objects representing heading rows (very top) 
+			const heading = [
+			  [{value: 'a1', style: styles.headerDark}, {value: 'b1', style: styles.headerDark}, {value: 'c1', style: styles.headerDark}],
+			  ['a2', 'b2', 'c2'] // <-- It can be only values 
+			];
+			 
+			//Here you specify the export structure 
+			const specification = {
+			  customer_name: { // <- the key should match the actual data key 
+			    displayName: 'Customer', // <- Here you specify the column header 
+			    headerStyle: styles.headerDark, // <- Header style 
+			    cellStyle: function(value, row) { // <- style renderer function 
+			      // if the status is 1 then color in green else color in red 
+			      // Notice how we use another cell value to style the current one 
+			      return (row.status_id == 1) ? styles.cellGreen : {fill: {fgColor: {rgb: 'FFFF0000'}}}; // <- Inline cell style is possible  
+			    },
+			    width: 120 // <- width in pixels 
+			  },
+			  status_id: {
+			    displayName: 'Status',
+			    headerStyle: styles.headerDark,
+			    cellFormat: function(value, row) { // <- Renderer function, you can access also any row.property 
+			      return (value == 1) ? 'Active' : 'Inactive';
+			    },
+			    width: '10' // <- width in chars (when the number is passed as string) 
+			  },
+			  note: {
+			    displayName: 'Description',
+			    headerStyle: styles.headerDark,
+			    cellStyle: styles.cellPink, // <- Cell style 
+			    width: 220 // <- width in pixels 
+			  }
+			}
+			 
+			// The data set should have the following shape (Array of Objects) 
+			// The order of the keys is irrelevant, it is also irrelevant if the 
+			// dataset contains more fields as the report is build based on the 
+			// specification provided above. But you should have all the fields 
+			// that are listed in the report specification 
+			const dataset = [
+			  {customer_name: 'IBM', status_id: 1, note: 'some note', misc: 'not shown'},
+			  {customer_name: 'HP', status_id: 0, note: 'some note'},
+			  {customer_name: 'MS', status_id: 0, note: 'some note', misc: 'not shown'}
+			]
+			 
+			// Define an array of merges. 1-1 = A:1 
+			// The merges are independent of the data. 
+			// A merge will overwrite all data _not_ in the top-left cell. 
+			const merges = [
+			  { start: { row: 1, column: 1 }, end: { row: 1, column: 10 } },
+			  { start: { row: 2, column: 1 }, end: { row: 2, column: 5 } },
+			  { start: { row: 2, column: 6 }, end: { row: 2, column: 10 } }
+			]
+			 
+			// Create the excel report. 
+			// This function will return Buffer 
+			const report = excel.buildExport(
+			  [ // <- Notice that this is an array. Pass multiple sheets to create multi sheet report 
+			    {
+			      name: 'Report', // <- Specify sheet name (optional) 
+			      heading: heading, // <- Raw heading array (optional) 
+			      merges: merges, // <- Merge cell ranges 
+			      specification: specification, // <- Report specification 
+			      data: dataset // <-- Report data 
+			    }
+			  ]
+			);
+			 
+			// You can then return this straight 
+			res.attachment('report.xlsx'); // This is sails.js specific (in general you need to set headers) 
+			return res.send(report);
 	});
 
 

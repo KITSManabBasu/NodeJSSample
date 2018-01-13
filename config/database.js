@@ -27,5 +27,7 @@ module.exports = {
 	//mongoimport -h ds243805.mlab.com:43805 -d ptsdev -c users -u ptsuser -p Password123 --file User_TestData.csv --type csv --headerline
 	//mongoimport -h ds243805.mlab.com:43805 -d ptsdev -c fpbillings -u ptsuser -p Password123 --file FP_BILLING.csv --type csv --headerline
 	//mongoimport -h ds243805.mlab.com:43805 -d ptsdev -c freezes -u ptsuser -p Password123 --file TIME_SHEET_FREEZE.csv --type csv --headerline
+	//mongoimport -h ds243805.mlab.com:43805 -d ptsdev -c weeks -u ptsuser -p Password123 --file Periods_Correction.csv --type csv --headerline
+	//mongoimport -h ds243805.mlab.com:43805 -d ptsdev -c periods -u ptsuser -p Password123 --file Period_Only.csv --type csv --headerline
 
 }
