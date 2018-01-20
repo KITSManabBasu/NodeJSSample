@@ -107,6 +107,20 @@ function getUserByID(req,res){
 			res.json(user); // return all todos in JSON format
 		});
 };
+
+function getUserByLoginIdandPassword(req,res){
+    console.log(req.params.loginId);
+    User.findOne({userid : req.params.loginId,password : req.params.password},function(err, user) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers", "X-Requested-With");
+        // if there is an error retrieving, send the error. nothing after res.send(err) will execute
+        if (err)
+            res.send(err)
+		console.log('getUserByLoginIdandPassworduser ' + user);
+        res.json(user); // return all todos in JSON format
+    });
+};
+
 function getUserByLoginID(req,res){
 	console.log(req.params.user_id);
 	User.findOne({userid : req.params.userloginid},function(err, user) {
@@ -500,37 +514,35 @@ undefined
 function getAllocationByUserIDandDate(req,res){
     var userId = req.params.userId;
     var queryDate = new Date(req.params.startDateofWeek);
+    console.log(req.params.userId);
+    console.log(queryDate);
     var condition = {
         'userid': userId,
-		'START_DATE':{ $gte: queryDate },
-        'END_DATE':{$lte : queryDate}
+		'START_DATE':{ $lte: queryDate },
+        'END_DATE':{$gte : queryDate}
     };
-   
-  // ,
-    //    'END_DATE':{$lte : new Date("2018-07-01T16:00:00.000Z")}
+    console.log(condition);
     Allocation.find(condition,function(err, allocation) {
-    	//Allocation.find({"START_DATE": {"$gte": new Date("2017-12-31T16:00:00.000Z")}},function(err, allocation2) {
         res.header("Access-Control-Allow-Origin", "*");
         res.header("Access-Control-Allow-Headers", "X-Requested-With");
         // if there is an error retrieving, send the error. nothing after res.send(err) will execute
         if (err)
             res.send(err);
         var validAllocation = allocation;
-        console.log(allocation);
-        /*allocation.forEach(function(item) {
+        console.log('allocation -' + validAllocation);
+       /* allocation.forEach(function(item) {
 			//check if queryDate falls between any allocation start date and end date
+			console.log(item.START_DATE);
 			if(queryDate >= new Date(item.START_DATE) && queryDate <= new Date(item.END_DATE))
 			{
 				validAllocation = item;
 			}
         });*/
-
-        
-
         if(validAllocation)
 		{
-            Allocation.find({_id : validAllocation._id}).populate('PROJECT_CODE').exec(function(err, projectAllocation) {
-                console.log(JSON.stringify(projectAllocation));
+			var allocationId = JSON.parse(JSON.stringify(validAllocation));
+            Allocation.find({_id : allocationId}).populate("PROJECT_CODE").exec(function(err, projectAllocation) {
+                console.log('After Project Population' + JSON.stringify(projectAllocation));
                 res.json(projectAllocation);
             })
 		}
@@ -552,6 +564,7 @@ function getTimesheetByUserIDandDate(req,res){
         res.json(timesheet); // return all todos in JSON format
     });
 };
+
 //*********************************SECTION FREEZE**************************************************
 function getFreezes(res){
 	Freeze.find(function(err, freeze) {		
@@ -1079,6 +1092,10 @@ module.exports = function(app) {
 	app.get('/api/users/:userloginid', function(req, res) {
 		getUserByLoginID(req,res);
 	});
+	app.get('/api/users/login/:loginId/:password', function(req, res) {
+    	console.log('before getUserByLoginIdandPassword');
+        getUserByLoginIdandPassword(req,res);
+    });
 	// delete a user
 	app.delete('/api/users/:user_id', function(req, res) {
 		User.remove({
@@ -1398,8 +1415,13 @@ module.exports = function(app) {
 		    };
  //{ $or:[ {'_id':objId}, {'name':param}, {'nickname':param} ]}
 	var condition2 = {'userid':{ $eq: queryuserid },
-        $or:[{'START_DATE':{ $gte: queryStartDate,$lte: queryEndDate }},{'END_DATE':{ $gte: queryStartDate,$lte: queryEndDate }}]
-    	};		    		    	
+        $or:[{'START_DATE':{ $gte: queryStartDate,$lte: queryEndDate }},
+        {'END_DATE':{ $gte: queryStartDate,$lte: queryEndDate }},
+        {'START_DATE':{ $lte: queryStartDate },'END_DATE':{$gte : queryEndDate} }
+        ]
+    	};	
+
+    	console.log(condition2);	    		    	
 		Allocation.find(condition2,function(err, allocation) {
 		res.header("Access-Control-Allow-Origin", "*");
       	res.header("Access-Control-Allow-Headers", "X-Requested-With");
@@ -1536,7 +1558,9 @@ module.exports = function(app) {
             leaveThursdayHour : req.body.leaveThursdayHour,
             leaveFridayHour : req.body.leaveFridayHour,
             leaveSaturdayHour : req.body.leaveSaturdayHour,
-            allocationId : req.body.allocationId
+            allocationId : req.body.allocationId,
+            CREATED_BY : req.body.CREATED_BY,
+            UPDATED_BY : req.body.UPDATED_BY,
         }, function(err, todo) {
             if (err)
                 res.send(err);
@@ -1569,7 +1593,9 @@ module.exports = function(app) {
             leaveThursdayHour : req.body.leaveThursdayHour,
             leaveFridayHour : req.body.leaveFridayHour,
             leaveSaturdayHour : req.body.leaveSaturdayHour,
-            allocationId : req.body.allocationId
+            allocationId : req.body.allocationId,
+            UPDATED_BY : req.body.UPDATED_BY,
+            UPDATED_ON : Date.now()
         }
             , options = { multi: true };
 
