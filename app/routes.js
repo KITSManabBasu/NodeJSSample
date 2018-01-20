@@ -22,6 +22,8 @@ const excel = require('node-excel-export');
 var Week=require('./models/week');
 var Period=require('./models/period');
 
+var alasql = require('alasql');
+
 
 var encrdecr=require('../security/encrdecr.js');
  
@@ -589,7 +591,312 @@ function getPeriods(res){
 			res.json(week); 
 		}).sort( { WEEKSTARTDATE: 1 } );
 };
+//*********************************SECTION Report**************************************************
+function getRptFPBilling(res,queryStartDate,queryEndDate,displayperiod,displaystart,displayend,condition,conditionCoverSheet){
+	Fpbilling
+		  .find(condition)
+		  .populate({
+			path:     'WON',			
+			populate: { path:  'OWNER_ID',
+				    model: 'Users' }
+		  }	
 
+		  ).sort( { billing_date: 1 } )
+		  .exec(function(err, data){
+		    if (err) return handleError(err);
+		    //res.json(data);
+		    billingdata=data;
+		    //res.json(billingdata);
+		    var result = [];
+				for(i = 0; i < billingdata.length; i++) {				  
+				    result.push({'InvoiceNumber': '', 
+				    	'WON': billingdata[i].WON.WON,
+				    	'WONDescription': billingdata[i].WON.WON_DESC,
+				    	'WONType': billingdata[i].WON.WON_TYPE,
+				    	'Location': billingdata[i].WON.OFF_ON,
+				    	'TeamOwner': billingdata[i].WON.OWNER_ID.firstname+' ' +billingdata[i].WON.OWNER_ID.lastname,
+				    	'BillingDescription': billingdata[i].bil_desc_id,
+				    	'BillingDate': billingdata[i].billing_date,
+				    	'InvoiceOwner': 'KITS',
+				    	'Total': billingdata[i].bill_amount
+
+				    });
+				}				
+			getRptCoverSheetonOff(res,queryStartDate,queryEndDate,displayperiod,displaystart,displayend,condition,conditionCoverSheet,result);	
+		    
+			
+		});
+};
+
+function getRptCoverSheetonOff(res,queryStartDate,queryEndDate,displayperiod,displaystart,displayend,condition,conditionCoverSheet,result){
+	Timesheet.find(conditionCoverSheet).populate('userId').populate({
+				path:     'allocationId',			
+				//populate: ({ path:  'WON',model: 'Wons',match: { OFF_ON: { $eq: "Onsite" }},
+				populate: ({ path:  'WON',model: 'Wons',
+									populate:({path:  'OWNER_ID',model: 'Users'}) })
+				
+							
+			  }).populate({
+				path:     'allocationId',			
+				populate: ({ path:  'BIL_DESC_ID',model: 'Billdescrips' })
+			  }).populate({
+				path:     'allocationId',			
+				populate: ({ path:  'PROJECT_CODE',model: 'Projectdetails' })
+			  }).//.populate({path:'allocationId.WON.OWNER_ID',populate: ({ path:  'OWNER_ID',model: 'Users' })}). 
+			exec(function(err, won) {
+				//res.header("Access-Control-Allow-Origin", "*");
+      			//res.header("Access-Control-Allow-Headers", "X-Requested-With");
+
+				// if there is an error retrieving, send the error. nothing after res.send(err) will execute
+			if (err) return handleError(err);
+			onsitedata=won;
+			var resultOnsite = [];
+			var resultOffshore = [];
+			var resAgregatedOnsite=[];
+			var resAgregatedOffshore=[];
+			//res.json(onsitedata);
+			for(i = 0; i < onsitedata.length; i++) {
+				if(onsitedata[i].allocationId.WON.OFF_ON==='Onsite')  {
+				resultOnsite.push({'InvoiceNumber': '', 
+				    	'WON': onsitedata[i].allocationId.WON.WON,
+				    	'BillingDescription': onsitedata[i].allocationId.BIL_DESC_ID.DESCRIPTION,
+				    	'TeamOwner': onsitedata[i].allocationId.WON.OWNER_ID.firstname+' '+onsitedata[i].allocationId.WON.OWNER_ID.middlename +' '+onsitedata[i].allocationId.WON.OWNER_ID.lastname,
+				    	'Member': onsitedata[i].userId.firstname+' '+ onsitedata[i].userId.middlename +' '+onsitedata[i].userId.lastname,
+				    	'InvoiceOwner': 'KITS',
+				    	'RatePerDay': onsitedata[i].allocationId.DAILY_RATE,
+				    	'NoOfDays': onsitedata[i].projectSundayHour+
+				    				onsitedata[i].projectMondayHour+
+				    				onsitedata[i].projectTuesdayHour+
+				    				onsitedata[i].projectWednesdayHour+
+				    				onsitedata[i].projectThursdayHour+
+				    				onsitedata[i].projectFridayHour+
+				    				onsitedata[i].projectSaturdayHour
+
+				    	});	
+					}
+					else if(onsitedata[i].allocationId.WON.OFF_ON==='Offshore')  {
+					resultOffshore.push({'InvoiceNumber': '', 
+				    	'WON': onsitedata[i].allocationId.WON.WON,
+				    	'BillingDescription': onsitedata[i].allocationId.BIL_DESC_ID.DESCRIPTION,
+				    	'TeamOwner': onsitedata[i].allocationId.WON.OWNER_ID.firstname+' '+onsitedata[i].allocationId.WON.OWNER_ID.middlename +' '+onsitedata[i].allocationId.WON.OWNER_ID.lastname,
+				    	'Member': onsitedata[i].userId.firstname+' '+ onsitedata[i].userId.middlename +' '+onsitedata[i].userId.lastname,
+				    	'InvoiceOwner': 'KITS',
+				    	'RatePerDay': onsitedata[i].allocationId.DAILY_RATE,
+				    	'NoOfDays': onsitedata[i].projectSundayHour+
+				    				onsitedata[i].projectMondayHour+
+				    				onsitedata[i].projectTuesdayHour+
+				    				onsitedata[i].projectWednesdayHour+
+				    				onsitedata[i].projectThursdayHour+
+				    				onsitedata[i].projectFridayHour+
+				    				onsitedata[i].projectSaturdayHour
+
+				    	});	
+					}
+				}
+				//res.json(resultOnsite);
+
+				resAgregatedOnsite = alasql('SELECT InvoiceNumber,WON,BillingDescription,'+
+					'TeamOwner,Member,InvoiceOwner,RatePerDay, SUM(NoOfDays) AS TotalNoOfDays,'+
+					'(RatePerDay * SUM(NoOfDays)) AS Total FROM ? GROUP BY '+
+					'InvoiceNumber,WON,BillingDescription,TeamOwner,Member,InvoiceOwner,RatePerDay',
+						[resultOnsite]); 
+				console.log(resAgregatedOnsite);
+
+				resAgregatedOffshore = alasql('SELECT InvoiceNumber,WON,BillingDescription,'+
+					'TeamOwner,Member,InvoiceOwner,RatePerDay, SUM(NoOfDays) AS TotalNoOfDays,'+
+					'(RatePerDay * SUM(NoOfDays)) AS Total FROM ? GROUP BY '+
+					'InvoiceNumber,WON,BillingDescription,TeamOwner,Member,InvoiceOwner,RatePerDay',
+						[resultOffshore]); 
+				//res.json(resAgregatedOffshore);
+
+				//start of excel report	 
+			 getAllReports(res,displayperiod,displaystart,displayend,result,resAgregatedOnsite,resAgregatedOffshore);
+			});
+};
+
+function getAllReports(res,displayperiod,displaystart,displayend,result,resAgregatedOnsite,resAgregatedOffshore){
+	//Array of objects representing heading rows (very top) 
+			const heading = [
+			  [{value: 'Fixed Price Billing', style: styles.headerDark}],
+			  ['Billing Period:', displayperiod],
+			  ['Start Date:',displaystart],  // <-- It can be only values 
+			  ['End Date:',displayend],
+			  ['']
+			];
+
+			const headingCoverSheetOnsite = [
+			  [{value: 'T&M Billing Onsite', style: styles.headerDark}],
+			  ['Billing Period:', displayperiod],
+			  ['Start Date:',displaystart],  // <-- It can be only values 
+			  ['End Date:',displayend],
+			  ['']
+			];
+
+			const headingCoverSheetOffshore = [
+			  [{value: 'T&M Billing Offshore', style: styles.headerDark}],
+			  ['Billing Period:', displayperiod],
+			  ['Start Date:',displaystart],  // <-- It can be only values 
+			  ['End Date:',displayend],
+			  ['']
+			];
+			 
+			//Here you specify the export structure 
+			const specification = {
+			 
+			  InvoiceNumber: {
+			    displayName: 'Invoice Number',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  WON: {
+			    displayName: 'WON',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  WONDescription: {
+			    displayName: 'WON Description',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  WONType: {
+			    displayName: 'WON Type',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  Location: {
+			    displayName: 'Location',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  TeamOwner: {
+			    displayName: 'Team Owner',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  BillingDescription: {
+			    displayName: 'Billing Description',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  BillingDate: {
+			    displayName: 'Billing Date',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  InvoiceOwner: {
+			    displayName: 'Invoice Owner',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  Total: {
+			    displayName: 'Total(GBP)',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  }
+			};
+			
+			const specificationCoverOnOff = {
+			  InvoiceNumber: {
+			    displayName: 'Invoice Number',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  WON: {
+			    displayName: 'WON',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  TeamOwner: {
+			    displayName: 'Team Owner',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  Member: {
+			    displayName: 'Member',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  InvoiceOwner: {
+			    displayName: 'Invoice Owner',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  RatePerDay: {
+			    displayName: 'Rate Per Day',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  TotalNoOfDays: {
+			    displayName: 'No. of Days',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  Total: {
+			    displayName: 'Total',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  }
+			};
+
+			// The data set should have the following shape (Array of Objects) 
+			// The order of the keys is irrelevant, it is also irrelevant if the 
+			// dataset contains more fields as the report is build based on the 
+			// specification provided above. But you should have all the fields 
+			// that are listed in the report specification 
+			const dataset = result;
+			const datasetresAgregatedOnsite=resAgregatedOnsite;
+			const datasetresAgregatedOffshore=resAgregatedOffshore;
+
+			/*[
+			  {customer_name: 'IBM', status_id: 1, note: 'some note', misc: 'not shown'},
+			  {customer_name: 'HP', status_id: 0, note: 'some note'},
+			  {customer_name: 'MS', status_id: 0, note: 'some note', misc: 'not shown'}
+			]*/
+			 
+			// Define an array of merges. 1-1 = A:1 
+			// The merges are independent of the data. 
+			// A merge will overwrite all data _not_ in the top-left cell. 
+			const merges = [
+			  { start: { row: 1, column: 1 }, end: { row: 1, column: 5 } }
+			 // { start: { row: 2, column: 1 }, end: { row: 2, column: 5 } },
+			  //{ start: { row: 2, column: 6 }, end: { row: 2, column: 10 } }
+			]
+			 
+			// Create the excel report. 
+			// This function will return Buffer 
+			const report = excel.buildExport(
+			  [ // <- Notice that this is an array. Pass multiple sheets to create multi sheet report 
+			    {
+			      name: 'FP Billing', // <- Specify sheet name (optional) 
+			      heading: heading, // <- Raw heading array (optional) 
+			      merges: merges, // <- Merge cell ranges 
+			      specification: specification, // <- Report specification 
+			      data: dataset // <-- Report data 
+			    },
+			    {
+			      name: 'Cover Sheet- Onsite', // <- Specify sheet name (optional) 
+			      heading: heading, // <- Raw heading array (optional) 
+			      merges: merges, // <- Merge cell ranges 
+			      specification: specificationCoverOnOff, // <- Report specification 
+			      data: datasetresAgregatedOnsite // <-- Report data 
+			    },
+			    {
+			      name: 'Cover Sheet - Offshore', // <- Specify sheet name (optional) 
+			      heading: heading, // <- Raw heading array (optional) 
+			      merges: merges, // <- Merge cell ranges 
+			      specification: specificationCoverOnOff, // <- Report specification 
+			      data: datasetresAgregatedOffshore // <-- Report data 
+			    }
+			  ]
+			);
+			 
+			// You can then return this straight 
+			res.attachment('PTS Report.xlsx'); // This is sails.js specific (in general you need to set headers) 
+			return res.send(report);
+
+		    //End of excel report
+
+};
 
 //*********************************END OF ALL SECTIONS************************************************
 module.exports = function(app) {
@@ -1040,6 +1347,56 @@ module.exports = function(app) {
 		getAllocationsByInternalID(req,res);
 	});
 
+	app.get('/api/allocationsallow/:allocationid/:userid/:startdate/:enddate', function(req, res) {
+	var queryStartDate = new Date(req.params.startdate);
+	var queryEndDate = new Date(req.params.enddate);	
+	var queryuserid = req.params.userid;	
+	var queryallocationid = req.params.allocationid;	
+	var condition = { 
+	 			'userid':{ $eq: queryuserid },       
+				'START_DATE':{ $gte: queryStartDate },
+		        'END_DATE':{$lte : queryEndDate}
+		    };
+ //{ $or:[ {'_id':objId}, {'name':param}, {'nickname':param} ]}
+	var condition2 = {'userid':{ $eq: queryuserid },
+        $or:[{'START_DATE':{ $gte: queryStartDate,$lte: queryEndDate }},{'END_DATE':{ $gte: queryStartDate,$lte: queryEndDate }}]
+    	};		    		    	
+		Allocation.find(condition2,function(err, allocation) {
+		res.header("Access-Control-Allow-Origin", "*");
+      	res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			if (err)
+				res.send(err);
+			//console.log(queryallocationid);
+			//res.send(allocation);
+			if(queryallocationid=='0')
+				{
+					//console.log(allocation.length);	
+					if(allocation.length>0)
+					{
+
+						res.json(false); 
+					}
+					else if(allocation.length==0)
+						res.json(true);
+				}
+			else
+				{
+					if(allocation.length==0)
+						res.json(true);
+					else if(allocation.length>0)
+						{
+							if(allocation[0]._id==queryallocationid)
+							{	
+								res.json(true);
+							}
+							else
+								res.json(false);
+						}
+
+				}
+		});
+	});
+
 	app.get('/api/allocationdetails', function(req, res) {
 		getAllocationdetails(res);
 	});
@@ -1201,7 +1558,7 @@ app.get('/api/freezes', function(req, res) {
 
 app.post('/api/freezes/:slno', function(req, res) {		
 		console.log(req.body);
-		console.log(req.params.internalid);
+		console.log(req.params.slno);
 		
 		var conditions = { SLNO : req.params.slno }
 		  , update = { 
@@ -1218,9 +1575,24 @@ app.post('/api/freezes/:slno', function(req, res) {
 		function callback (err, numAffected) {
 		  if (err)
 				res.send(err);
-			getAllocations(res);
-		};																
-		
+			getFreezes(res);
+		};	
+
+		/*Freeze.create({
+			SLNO : 1,
+			StartDate : req.body.StartDate,
+			EndDate : req.body.EndDate,			
+			Freeze : req.body.Freeze,
+			UPDATED_BY : req.body.UPDATED_BY,
+			UPDATED_ON : Date.now(),	
+
+			done : false
+		}, function(err, todo) {
+			if (err)
+				res.send(err);
+			res.json(true);
+		});															
+		*/
 	});
 
 //***************************************END OF Freeze************************************************
@@ -1307,7 +1679,7 @@ app.get('/api/perioddateupdates/', function(req, res) {
 
 //***************************************END OF Week AND PERIOD************************************************
 //***************************************START OF BILLING EXTRACT-FPBILLING************************************************
-app.get('/api/extractfpbilling/:startdate/:enddate/:displayperiod/:displaystart/:displayend', function(req, res) {
+app.get('/api/extractbilling/:startdate/:enddate/:displayperiod/:displaystart/:displayend', function(req, res) {
 	//http://localhost:8080/api/extractfpbilling/2018-01-01T00:00:00.000Z/2018-01-01T00:00:00.000Z/P1-2017/01-01-2018/01-02-2019
 	var queryStartDate = new Date(req.params.startdate);
 	var queryEndDate = new Date(req.params.enddate);
@@ -1319,178 +1691,42 @@ app.get('/api/extractfpbilling/:startdate/:enddate/:displayperiod/:displaystart/
         'billing_date':{ $gte: queryStartDate,$lte: queryEndDate }
     	};
 
-
-    console.log(condition);
-	/*Fpbilling.find(condition).populate('WON').//populate('OWNER_ID'). 
-		exec(function(err, won) {
-		console.log('called poc won');
-			res.header("Access-Control-Allow-Origin", "*");
-      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
-
-			// if there is an error retrieving, send the error. nothing after res.send(err) will execute
-			if (err)
-				res.send(err)
-			res.json(won);
-		});
-
-		*/
-		Fpbilling
-		  .find(condition)
-		  .populate({
-			path:     'WON',			
-			populate: { path:  'OWNER_ID',
-				    model: 'Users' }
-		  }	
-
-		  ).sort( { billing_date: 1 } )
-		  .exec(function(err, data){
-		    if (err) return handleError(err);
-		    //res.json(data);
-		    billingdata=data;
-		    //res.json(billingdata);
-		    var result = [];
-				for(i = 0; i < billingdata.length; i++) {				  
-				    result.push({'InvoiceNumber': '', 
-				    	'WON': billingdata[i].WON.WON,
-				    	'WONDescription': billingdata[i].WON.WON_DESC,
-				    	'WONType': billingdata[i].WON.WON_TYPE,
-				    	'Location': billingdata[i].WON.OFF_ON,
-				    	'TeamOwner': billingdata[i].WON.OWNER_ID.firstname+' ' +billingdata[i].WON.OWNER_ID.lastname,
-				    	'BillingDescription': billingdata[i].bil_desc_id,
-				    	'BillingDate': billingdata[i].billing_date,
-				    	'InvoiceOwner': 'KITS',
-				    	'Total': billingdata[i].bill_amount
-
-				    });
-				}				
-				console.log(JSON.stringify(result));
-
-		    //start of excel report	 
-			 
-			//Array of objects representing heading rows (very top) 
-			const heading = [
-			  [{value: 'Fixed Price Billing', style: styles.headerDark}],
-			  ['Billing Period:', displayperiod],
-			  ['Start Date:',displaystart],  // <-- It can be only values 
-			  ['End Date:',displayend],
-			  ['']
-			];
-			 
-			//Here you specify the export structure 
-			const specification = {
-			 
-			  InvoiceNumber: {
-			    displayName: 'Invoice Number',
-			    headerStyle: styles.headerDark,
-			    width: 100
-			  },
-			  WON: {
-			    displayName: 'WON',
-			    headerStyle: styles.headerDark,
-			    width: 100
-			  },
-			  WONDescription: {
-			    displayName: 'WON Description',
-			    headerStyle: styles.headerDark,
-			    width: 100
-			  },
-			  WONType: {
-			    displayName: 'WON Type',
-			    headerStyle: styles.headerDark,
-			    width: 100
-			  },
-			  Location: {
-			    displayName: 'Location',
-			    headerStyle: styles.headerDark,
-			    width: 100
-			  },
-			  TeamOwner: {
-			    displayName: 'Team Owner',
-			    headerStyle: styles.headerDark,
-			    width: 100
-			  },
-			  BillingDescription: {
-			    displayName: 'Billing Description',
-			    headerStyle: styles.headerDark,
-			    width: 100
-			  },
-			  BillingDate: {
-			    displayName: 'Billing Date',
-			    headerStyle: styles.headerDark,
-			    width: 100
-			  },
-			  InvoiceOwner: {
-			    displayName: 'Invoice Owner',
-			    headerStyle: styles.headerDark,
-			    width: 100
-			  },
-			  Total: {
-			    displayName: 'Total(GBP)',
-			    headerStyle: styles.headerDark,
-			    width: 100
-			  }
-
-			}
-			 
-			// The data set should have the following shape (Array of Objects) 
-			// The order of the keys is irrelevant, it is also irrelevant if the 
-			// dataset contains more fields as the report is build based on the 
-			// specification provided above. But you should have all the fields 
-			// that are listed in the report specification 
-			const dataset = result;
-
-			/*[
-			  {customer_name: 'IBM', status_id: 1, note: 'some note', misc: 'not shown'},
-			  {customer_name: 'HP', status_id: 0, note: 'some note'},
-			  {customer_name: 'MS', status_id: 0, note: 'some note', misc: 'not shown'}
-			]*/
-			 
-			// Define an array of merges. 1-1 = A:1 
-			// The merges are independent of the data. 
-			// A merge will overwrite all data _not_ in the top-left cell. 
-			const merges = [
-			  { start: { row: 1, column: 1 }, end: { row: 1, column: 5 } }
-			 // { start: { row: 2, column: 1 }, end: { row: 2, column: 5 } },
-			  //{ start: { row: 2, column: 6 }, end: { row: 2, column: 10 } }
-			]
-			 
-			// Create the excel report. 
-			// This function will return Buffer 
-			const report = excel.buildExport(
-			  [ // <- Notice that this is an array. Pass multiple sheets to create multi sheet report 
-			    {
-			      name: 'FP Billing', // <- Specify sheet name (optional) 
-			      heading: heading, // <- Raw heading array (optional) 
-			      merges: merges, // <- Merge cell ranges 
-			      specification: specification, // <- Report specification 
-			      data: dataset // <-- Report data 
-			    },
-			    {
-			      name: 'Cover Sheet- Onsite', // <- Specify sheet name (optional) 
-			      heading: heading, // <- Raw heading array (optional) 
-			      merges: merges, // <- Merge cell ranges 
-			      specification: specification, // <- Report specification 
-			      data: dataset // <-- Report data 
-			    },
-			    {
-			      name: 'Cover Sheet - Offshore', // <- Specify sheet name (optional) 
-			      heading: heading, // <- Raw heading array (optional) 
-			      merges: merges, // <- Merge cell ranges 
-			      specification: specification, // <- Report specification 
-			      data: dataset // <-- Report data 
-			    }
-			  ]
-			);
-			 
-			// You can then return this straight 
-			res.attachment('PTS Report.xlsx'); // This is sails.js specific (in general you need to set headers) 
-			return res.send(report);
-
-		    //End of excel report
-		});
+    var conditionCoverSheet = {        
+				'startDateofWeek':{ $gte: queryStartDate },
+		        'endDateofWeek':{$lte : queryEndDate}
+		    };	
+    
+		getRptFPBilling(res,queryStartDate,queryEndDate,displayperiod,displaystart,displayend,condition,conditionCoverSheet);
 
 	}
 );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //***************************************END OF BILLING EXTRACT-FPBILLING************************************************

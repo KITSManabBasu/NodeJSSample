@@ -9,6 +9,7 @@
   "author": "MRB",
   "license": "ISC",
   "dependencies": {
+    "alasql": "^0.4.4",
     "body-parser": "1.4.3",
     "cors": "*",
     "express": "4.6.1",
