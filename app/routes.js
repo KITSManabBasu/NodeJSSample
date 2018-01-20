@@ -78,6 +78,12 @@ function getTodos(res){
 		});
 };
 
+ function $N(value, ifnull) {
+    if (value === null || value === undefined)
+      return ifnull;
+    return value;
+ }
+
 //*********************************SECTION USER************************************************
 function getUsers(res){
 	User.find(function(err, users) {
@@ -354,14 +360,18 @@ function getAllocations(res){
 		  populate('BIL_DESC_ID').
 		  exec(function (err, story) {
 		    if (err) return res.send(err);
-		    //res.json(story);
-		   // console.log('The author is %s', story.GEO_ID.LOCATION);
-		    res.json(story);
-		    //console.log('The author is %s', Won.geo.LOCATION);
-		    // prints "The author is Ian Fleming"
-		    
-		   // console.log('The authors age is %s', story.author.age);
-		    // prints "The authors age is null'
+		    var allocationdata=[];
+		    allocationdata=story;
+		    //res.json(story);		   
+
+		    resAgregatedOnsite = alasql('SELECT * FROM ? arrTwo '+
+		    						'WHERE arrTwo.userid IS NOT NULL AND '+
+		    						'arrTwo.PROJECT_CODE IS NOT NULL AND '+
+		    						'arrTwo.WON IS NOT NULL AND '+
+		    						'arrTwo.BIL_DESC_ID IS NOT NULL',
+						[allocationdata]); 
+		    res.send(resAgregatedOnsite);
+
 		  })
 
 };
@@ -605,7 +615,14 @@ function getRptFPBilling(res,queryStartDate,queryEndDate,displayperiod,displayst
 		  .exec(function(err, data){
 		    if (err) return handleError(err);
 		    //res.json(data);
-		    billingdata=data;
+
+		   billingdata = alasql('SELECT * FROM ? arrTwo '+
+		    						'WHERE arrTwo.WON IS NOT NULL AND '+
+		    						'arrTwo.WON.OWNER_ID IS NOT NULL '
+		    						,
+						[data]); 
+
+		   // billingdata=data;
 		    //res.json(billingdata);
 		    var result = [];
 				for(i = 0; i < billingdata.length; i++) {				  
@@ -643,13 +660,35 @@ function getRptCoverSheetonOff(res,queryStartDate,queryEndDate,displayperiod,dis
 				path:     'allocationId',			
 				populate: ({ path:  'PROJECT_CODE',model: 'Projectdetails' })
 			  }).//.populate({path:'allocationId.WON.OWNER_ID',populate: ({ path:  'OWNER_ID',model: 'Users' })}). 
-			exec(function(err, won) {
+			exec(function(err, data) {
 				//res.header("Access-Control-Allow-Origin", "*");
       			//res.header("Access-Control-Allow-Headers", "X-Requested-With");
 
 				// if there is an error retrieving, send the error. nothing after res.send(err) will execute
 			if (err) return handleError(err);
-			onsitedata=won;
+
+			/*onsitedata = alasql('SELECT * FROM ? arrTwo '+
+		    						'WHERE arrTwo.allocationId IS NOT NULL AND '+
+		    						'arrTwo.allocationId.WON IS NOT NULL AND ' +
+		    						'arrTwo.allocationId.BIL_DESC_ID IS NOT NULL AND ' +
+		    						'arrTwo.allocationId.WON IS NOT NULL AND ' +
+		    						'arrTwo.allocationId.userId IS NOT NULL AND ' +
+		    						'arrTwo.WON.OWNER_ID IS NOT NULL ' 
+		    						,
+						[data]); */
+
+			onsitedata = alasql('SELECT * FROM ? arrTwo '+
+		    						'WHERE arrTwo.allocationId IS NOT NULL AND '+ 
+		    						'arrTwo.allocationId.WON IS NOT NULL AND '+
+		    						'arrTwo.allocationId.BIL_DESC_ID IS NOT NULL AND '+
+		    						'arrTwo.allocationId.WON IS NOT NULL AND '+
+		    						'arrTwo.userId IS NOT NULL AND '+
+		    						'arrTwo.allocationId.WON.OWNER_ID IS NOT NULL ' 
+		    						,
+						[data]);			
+
+			//onsitedata=data;
+			
 			var resultOnsite = [];
 			var resultOffshore = [];
 			var resAgregatedOnsite=[];
@@ -664,13 +703,13 @@ function getRptCoverSheetonOff(res,queryStartDate,queryEndDate,displayperiod,dis
 				    	'Member': onsitedata[i].userId.firstname+' '+ onsitedata[i].userId.middlename +' '+onsitedata[i].userId.lastname,
 				    	'InvoiceOwner': 'KITS',
 				    	'RatePerDay': onsitedata[i].allocationId.DAILY_RATE,
-				    	'NoOfDays': onsitedata[i].projectSundayHour+
-				    				onsitedata[i].projectMondayHour+
-				    				onsitedata[i].projectTuesdayHour+
-				    				onsitedata[i].projectWednesdayHour+
-				    				onsitedata[i].projectThursdayHour+
-				    				onsitedata[i].projectFridayHour+
-				    				onsitedata[i].projectSaturdayHour
+				    	'NoOfDays': $N(onsitedata[i].projectSundayHour,0)+
+				    				$N(onsitedata[i].projectMondayHour,0)+
+				    				$N(onsitedata[i].projectTuesdayHour,0)+
+				    				$N(onsitedata[i].projectWednesdayHour,0)+
+				    				$N(onsitedata[i].projectThursdayHour,0)+
+				    				$N(onsitedata[i].projectFridayHour,0)+
+				    				$N(onsitedata[i].projectSaturdayHour,0)
 
 				    	});	
 					}
@@ -682,13 +721,13 @@ function getRptCoverSheetonOff(res,queryStartDate,queryEndDate,displayperiod,dis
 				    	'Member': onsitedata[i].userId.firstname+' '+ onsitedata[i].userId.middlename +' '+onsitedata[i].userId.lastname,
 				    	'InvoiceOwner': 'KITS',
 				    	'RatePerDay': onsitedata[i].allocationId.DAILY_RATE,
-				    	'NoOfDays': onsitedata[i].projectSundayHour+
-				    				onsitedata[i].projectMondayHour+
-				    				onsitedata[i].projectTuesdayHour+
-				    				onsitedata[i].projectWednesdayHour+
-				    				onsitedata[i].projectThursdayHour+
-				    				onsitedata[i].projectFridayHour+
-				    				onsitedata[i].projectSaturdayHour
+				    	'NoOfDays': $N(onsitedata[i].projectSundayHour,0)+
+				    				$N(onsitedata[i].projectMondayHour,0)+
+				    				$N(onsitedata[i].projectTuesdayHour,0)+
+				    				$N(onsitedata[i].projectWednesdayHour,0)+
+				    				$N(onsitedata[i].projectThursdayHour,0)+
+				    				$N(onsitedata[i].projectFridayHour,0)+
+				    				$N(onsitedata[i].projectSaturdayHour,0)
 
 				    	});	
 					}
@@ -700,7 +739,7 @@ function getRptCoverSheetonOff(res,queryStartDate,queryEndDate,displayperiod,dis
 					'(RatePerDay * SUM(NoOfDays)) AS Total FROM ? GROUP BY '+
 					'InvoiceNumber,WON,BillingDescription,TeamOwner,Member,InvoiceOwner,RatePerDay',
 						[resultOnsite]); 
-				console.log(resAgregatedOnsite);
+				//console.log(resAgregatedOnsite);
 
 				resAgregatedOffshore = alasql('SELECT InvoiceNumber,WON,BillingDescription,'+
 					'TeamOwner,Member,InvoiceOwner,RatePerDay, SUM(NoOfDays) AS TotalNoOfDays,'+
