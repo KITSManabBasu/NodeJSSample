@@ -760,7 +760,7 @@ function getRptCoverSheetonOff(res,queryStartDate,queryEndDate,displayperiod,dis
 					'InvoiceNumber,WON,BillingDescription,TeamOwner,Member,InvoiceOwner,RatePerDay',
 						[resultOffshore]); 
 				//res.json(resAgregatedOffshore);
-
+				//console.log(resAgregatedOnsite);
 				//start of excel report	 
 			 getAllReports(res,displayperiod,displaystart,displayend,result,resAgregatedOnsite,resAgregatedOffshore);
 			});
@@ -858,6 +858,11 @@ function getAllReports(res,displayperiod,displaystart,displayend,result,resAgreg
 			    headerStyle: styles.headerDark,
 			    width: 100
 			  },
+			  BillingDescription: {
+			    displayName: 'Billing Description',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
 			  TeamOwner: {
 			    displayName: 'Team Owner',
 			    headerStyle: styles.headerDark,
@@ -927,14 +932,14 @@ function getAllReports(res,displayperiod,displaystart,displayend,result,resAgreg
 			    },
 			    {
 			      name: 'Cover Sheet- Onsite', // <- Specify sheet name (optional) 
-			      heading: heading, // <- Raw heading array (optional) 
+			      heading: headingCoverSheetOnsite, // <- Raw heading array (optional) 
 			      merges: merges, // <- Merge cell ranges 
 			      specification: specificationCoverOnOff, // <- Report specification 
 			      data: datasetresAgregatedOnsite // <-- Report data 
 			    },
 			    {
 			      name: 'Cover Sheet - Offshore', // <- Specify sheet name (optional) 
-			      heading: heading, // <- Raw heading array (optional) 
+			      heading: headingCoverSheetOffshore, // <- Raw heading array (optional) 
 			      merges: merges, // <- Merge cell ranges 
 			      specification: specificationCoverOnOff, // <- Report specification 
 			      data: datasetresAgregatedOffshore // <-- Report data 
