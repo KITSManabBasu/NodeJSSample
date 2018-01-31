@@ -5,6 +5,8 @@ module.exports = mongoose.model('Fpbillings', {
 	bill_amount : {type : Number, default: 0},
 	billing_date : {type : Date, default: Date.now},
 	bil_desc_id : {type : String, default: ''},
+	po_number : {type : Number, default: 0},
+	sow_number : {type : Number, default: 0},
 	CREATED_BY : {type : String, default: ''},
 	CREATED_ON : {type: Date, default: Date.now},
 	UPDATED_BY : {type : String, default: ''},

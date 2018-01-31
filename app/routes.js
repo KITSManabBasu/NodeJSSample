@@ -416,6 +416,22 @@ function getAllocationdetails(res){
 			
 		}).sort( { userid: 1 } );
 };
+
+function getSunday(d) {
+  d = new Date(d);
+  console.log(d.getDay());
+  var day = d.getDay(),
+      diff = d.getDate() - day ; // adjust when day is sunday
+  return new Date(d.setDate(diff));
+};
+function getSaturday(d) {
+  d = new Date(d);
+  console.log(d.getDay());
+  var day = d.getDay(),
+      diff = d.getDate() - day + 6; // adjust when day is sunday
+  return new Date(d.setDate(diff));
+};
+
 function getalloProject(res,allocationdata){			
 			
 			var projectdetaildata;
@@ -513,14 +529,25 @@ undefined
 //*********************************SECTION TIMESHEET**************************************************
 function getAllocationByUserIDandDate(req,res){
     var userId = req.params.userId;
-    var queryDate = new Date(req.params.startDateofWeek);
+    var queryStartDate = new Date(req.params.startDateofWeek);
+    var queryEndDate = new Date(req.params.endDateofWeek);
     console.log(req.params.userId);
-    console.log(queryDate);
-    var condition = {
-        'userid': userId,
-		'START_DATE':{ $lte: queryDate },
-        'END_DATE':{$gte : queryDate}
-    };
+    console.log(queryStartDate + '-' +  queryEndDate);
+/*    var condition = {
+            $or: [
+					{'userid': userId, 'START_DATE':{ $lte: queryStartDate},'END_DATE': {$lte: queryEndDate, $gte: queryStartDate}},
+					{'userid': userId, 'START_DATE':{ $gte: queryStartDate},'END_DATE': {$lte: queryEndDate}},
+                	{'userid': userId, 'START_DATE':{ $lte: queryStartDate},'END_DATE': {$gte: queryEndDate}},
+                	{'userid': userId, 'END_DATE':{ $gte: queryEndDate},'START_DATE': {$gte: queryStartDate, $lte: queryEndDate}}
+				 ]
+			}*/
+    var condition = {'userid': userId,
+        $or: [
+            {'START_DATE': {$gte: queryStartDate,$lte: queryEndDate}},
+            {'END_DATE':{ $gte: queryStartDate, $lte: queryEndDate}},
+            {'START_DATE':{ $lte: queryStartDate},'END_DATE': {$gte: queryEndDate}}
+        ]
+    }
     console.log(condition);
     Allocation.find(condition,function(err, allocation) {
         res.header("Access-Control-Allow-Origin", "*");
@@ -541,7 +568,7 @@ function getAllocationByUserIDandDate(req,res){
         if(validAllocation)
 		{
 			var allocationId = JSON.parse(JSON.stringify(validAllocation));
-            Allocation.find({_id : allocationId}).populate("PROJECT_CODE").exec(function(err, projectAllocation) {
+            Allocation.find({_id : allocationId}).populate("PROJECT_CODE").populate('WON').populate('BIL_DESC_ID').exec(function(err, projectAllocation) {
                 console.log('After Project Population' + JSON.stringify(projectAllocation));
                 res.json(projectAllocation);
             })
@@ -646,6 +673,8 @@ function getRptFPBilling(res,queryStartDate,queryEndDate,displayperiod,displayst
 				    	'Location': billingdata[i].WON.OFF_ON,
 				    	'TeamOwner': billingdata[i].WON.OWNER_ID.firstname+' ' +billingdata[i].WON.OWNER_ID.lastname,
 				    	'BillingDescription': billingdata[i].bil_desc_id,
+				    	'po_number': billingdata[i].po_number,
+				    	'sow_number': billingdata[i].sow_number,
 				    	'BillingDate': billingdata[i].billing_date,
 				    	'InvoiceOwner': 'KITS',
 				    	'Total': billingdata[i].bill_amount
@@ -827,6 +856,16 @@ function getAllReports(res,displayperiod,displaystart,displayend,result,resAgreg
 			  },
 			  BillingDescription: {
 			    displayName: 'Billing Description',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  po_number: {
+			    displayName: 'PO Number',
+			    headerStyle: styles.headerDark,
+			    width: 100
+			  },
+			  sow_number: {
+			    displayName: 'SOW Number',
 			    headerStyle: styles.headerDark,
 			    width: 100
 			  },
@@ -1302,6 +1341,8 @@ module.exports = function(app) {
 			bill_amount : req.body.bill_amount,
 			billing_date : req.body.billing_date,
 			bil_desc_id : req.body.bil_desc_id,
+			po_number : req.body.po_number,
+			sow_number : req.body.sow_number,
 			CREATED_BY : req.body.CREATED_BY,
 			UPDATED_BY : req.body.UPDATED_BY,
 			done : false
@@ -1322,6 +1363,8 @@ module.exports = function(app) {
 			bill_amount : req.body.bill_amount,
 			billing_date : req.body.billing_date,
 			bil_desc_id : req.body.bil_desc_id,
+			po_number : req.body.po_number,
+			sow_number : req.body.sow_number,
 			UPDATED_BY : req.body.UPDATED_BY,
 			UPDATED_ON : Date.now(),
 		  }
@@ -1407,7 +1450,84 @@ module.exports = function(app) {
 	app.get('/api/allocations/:internalid/:rnd', function(req, res) {		
 		getAllocationsByInternalID(req,res);
 	});
+	app.get('/api/allocationstimesheetexist/:allocationid/:startdate', function(req, res) {
+		var queryallocationid = req.params.allocationid;
+		var queryStartDate = new Date(req.params.startdate);
+		var lastSundayOfStartDate=getSunday(queryStartDate);
+		Timesheet.find({allocationId : queryallocationid, startDateofWeek: lastSundayOfStartDate},function(err, timesheetst) {
+			res.header("Access-Control-Allow-Origin", "*");
+      		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+      		if (err)
+				res.send(err);
+			if(timesheetst.length>0)
+			{
+				res.json(true); 
+			}
+			else
+			{
+				res.json(false); 
+			}
 
+		});
+	});
+/*	app.get('/api/allocationstimesheetdataexist/:allocationid/:userid/:startdate/:enddate', function(req, res) {
+		var queryStartDate = new Date(req.params.startdate);
+		var queryEndDate = new Date(req.params.enddate);	
+		var queryuserid = req.params.userid;	
+		var queryallocationid = req.params.allocationid;
+
+		var	condition={ 
+	 			'_id':{ $eq: queryallocationid },       
+				'START_DATE':{ $eq: queryStartDate },
+		        'END_DATE':{$eq : queryEndDate}
+		    };
+
+		Allocation.find(condition,function(err, allocation) {
+		res.header("Access-Control-Allow-Origin", "*");
+      	res.header("Access-Control-Allow-Headers", "X-Requested-With");
+			if (err)
+				res.send(err);
+
+			if(allocation.length>0)// The input date is matchs with the existing allocation date, so no issue
+						res.json(0);//allow
+			else
+				{
+					var lastSundayOfStartDate=getSunday(queryStartDate);
+					var lastSundayOfEndDate=getSunday(queryStartDate);
+
+					Timesheet.find({allocationId : queryallocationid, startDateofWeek: lastSundayOfStartDate},function(err, timesheetst) {
+			        
+			        if (err)
+			            res.send(err)
+			        	if(timesheetst.length>0);
+			        		res.json(2);//start of week already present in the TS table
+			        	else
+			        			{
+			        				res.json(3);
+			        				Timesheet.find({allocationId : queryallocationid, startDateofWeek: lastSundayOfEndDate},function(err, timesheetst) {
+
+
+			        				})
+			        			}
+			    	});
+
+				}		
+
+			
+		});    
+
+
+
+		
+		res.header("Access-Control-Allow-Origin", "*");
+      	res.header("Access-Control-Allow-Headers", "X-Requested-With");
+
+      	
+
+      	//res.send(getLastSunday);
+      	res.send(true);
+	});
+*/
 	app.get('/api/allocationsallow/:allocationid/:userid/:startdate/:enddate', function(req, res) {
 	var queryStartDate = new Date(req.params.startdate);
 	var queryEndDate = new Date(req.params.enddate);	
@@ -1529,7 +1649,7 @@ module.exports = function(app) {
 //***************************************END OF Allocation************************************************
 
 //***************************************START OF TIMESHEET************************************************
-    app.get('/api/allocation/:userId/:startDateofWeek', function(req, res) {
+    app.get('/api/allocation/:userId/:startDateofWeek/:endDateofWeek', function(req, res) {
         console.log('before call allocation by userId and date');
         getAllocationByUserIDandDate(req,res);
     });
@@ -1548,7 +1668,6 @@ module.exports = function(app) {
             userId : req.body.userId,
             startDateofWeek : req.body.startDate,
             endDateofWeek : req.body.endDate,
-            projectCode : req.body.projectCode,
             projectSundayHour : req.body.projectSundayHour,
             projectMondayHour : req.body.projectMondayHour,
             projectTuesdayHour : req.body.projectTuesdayHour,
@@ -1583,7 +1702,6 @@ module.exports = function(app) {
             userId : req.body.userId,
             startDateofWeek : req.body.startDate,
             endDateofWeek : req.body.endDate,
-            projectCode : req.body.projectCode,
             projectSundayHour : req.body.projectSundayHour,
             projectMondayHour : req.body.projectMondayHour,
             projectTuesdayHour : req.body.projectTuesdayHour,

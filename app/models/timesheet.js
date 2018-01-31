@@ -1,10 +1,9 @@
 var mongoose = require('mongoose');
 
-module.exports = mongoose.model('Timesheet', {
+module.exports = mongoose.model('Timesheets', {
     userId : {type: mongoose.Schema.Types.ObjectId, ref: 'Users'},
     startDateofWeek : {type : Date, default: Date.now},
     endDateofWeek : {type : Date, default: Date.now},
-    projectCode : {type : String, default: ''},
     projectSundayHour : {type : Number, default: 0},
     projectMondayHour : {type : Number, default: 0},
     projectTuesdayHour : {type : Number, default: 0},
@@ -20,4 +19,8 @@ module.exports = mongoose.model('Timesheet', {
     leaveFridayHour : {type : Number, default: 0},
     leaveSaturdayHour : {type : Number, default: 0},
     allocationId: {type: mongoose.Schema.Types.ObjectId, ref: 'Allocations'},
+    CREATED_BY : {type : String, default: ''},
+    CREATED_ON : {type: Date, default: Date.now},
+    UPDATED_BY : {type : String, default: ''},
+    UPDATED_ON: { type: Date, default: Date.now }
 });
