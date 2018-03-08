@@ -4,8 +4,8 @@ module.exports = {
 	//url :'mongodb://MRB:Password123@apollo.modulusmongo.net:27017/yvix3ogI'
 	//url : 'mongodb://manab_it:Password123@ds249025.mlab.com:49025/tododb'
 	
-	url : 'mongodb://ptsuser:Password123@ds243805.mlab.com:43805/ptsdev'
-	//url : 'mongodb://ptsuser:Password123@ds211088.mlab.com:11088/ptslab'
+	//url : 'mongodb://ptsuser:Password123@ds243805.mlab.com:43805/ptsdev'
+	url : 'mongodb://ptsuser:Password123@ds211088.mlab.com:11088/ptslab'
 
 	//mlab login:manab_it,Password123
 	//Connection String: mongodb://ptsuser:Password123@ds243805.mlab.com:43805/ptsdev
